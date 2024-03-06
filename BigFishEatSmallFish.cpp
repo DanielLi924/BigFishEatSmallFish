@@ -1,3 +1,4 @@
+/*
 #include <graphics.h>
 #include <conio.h>
 
@@ -63,3 +64,29 @@ int main() {
     closegraph();
     return 0;
 }
+*/
+#include <graphics.h>
+#include <conio.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    // Initialize graphics mode
+    initgraph(1920, 1080);  // Adjust the resolution as needed
+
+    // Load PNG image
+    IMAGE img;
+    loadimage(&img _T("C:/Users/Cheng/Desktop/Snipaste_2024-03-06_14-17-21.jpg"));
+    // Display the image
+    putimage(0, 0, &img);
+
+    // Wait for a key press before closing the window
+    _getch();
+
+    // Close the graphics window
+    closegraph();
+
+    return 0;
+}
+
+
