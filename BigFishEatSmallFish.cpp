@@ -2,7 +2,7 @@
 #include <conio.h>
 #include <stdio.h>
 
-#define return_value; //¹Ø¼ü·µ»ØÖµ
+#define return_value //¹Ø¼ü·µ»ØÖµ
 
 // ¹¦ÄÜÄ£¿é
 bool isPointInsideRectangle(int x, int y, int left, int top, int right, int bottom); //Êó±ê¼ì²âÄ£¿é
@@ -11,41 +11,78 @@ void DrawButten(int left, int top, int right, int bottom, const char* text); //´
 int starting();
 
 
-void main()//Ö÷º¯Êı
+int main()//Ö÷º¯Êı
 {
-	initgraph(1920, 1080);
+	initgraph(1920, 1080);//»­²¼³ß´ç
 	starting(); //½øÈë³ÌĞò½çÃæ
-	
+	return 0;
 }
 
 int starting()
 {
-	DrawButten(945, 530, 975, 550, "login");
-	DrawButten(945, 560, 975, 570, "SignUp");
-	DrawButten(int left, int top, int right, int bottom, const char* text);
-	
-	
+	int LoginLeft = 900, LoginTop = 530, LoginRight = 990, LoginDown = 550;
+	int SignUpLeft = 900, SignUpTop = 560, SignUpRight = 990, SignUpDown = 570;
+	int ExitLeft = 900, ExitTop = 580, ExitRight = 990, ExitDown = 600;
+	DrawButten(LoginLeft,LoginTop, LoginRight, LoginDown, "login"); //»æÖÆµÇÂ¼°´Å¥
+	DrawButten(SignUpLeft, SignUpTop, SignUpRight, SignUpDown, "SignUp"); //»æÖÆ×¢²á°´Å¥
+	DrawButten(ExitLeft, ExitTop, ExitRight,ExitDown, "Exit"); //»æÖÆÍË³öÍ¼±ê
+	bool LoginClicked = false; //ÉèÖÃµÇÂ¼°´Å¥Îªfalse
+	bool SignUpClicked = false; //ÉèÖÃ×¢²á°´Å¥Îªfalse
+	bool ExitClicked = false; //ÉèÖÃÍË³ö°´Å¥Îªfalse
 	while (1)
 	{
-		if (MouseHit)
+
+		if (MouseHit) //¼ì²âÊó±êÊÇ·ñÓĞ»î¶¯ÊÂ¼ş
 		{
-			MOUSEMSG msg = GetMouseMsg();
-			int x = msg.x;
-			int y = msg.y;
+			MOUSEMSG msg = GetMouseMsg(); //½«ĞÅÏ¢´æÈëmsg
+			int x = msg.x; //»ñÈ¡Êó±ê x ×ø±ê
+			int y = msg.y; //»ñÈ¡Êó±ê y ×ø±ê
 
-			if (msg.uMsg == WM_LBUTTONDOWN)
+			if (msg.uMsg == WM_LBUTTONDOWN) //ÅĞ¶ÏÌõ¼şÎªÈç¹ûÊó±ê×ó¼ü°´ÏÂ
 			{
-				if(isP)
+				if (isPointInsideRectangle(x, y, LoginLeft, LoginTop, LoginRight, LoginDown))
+				{
+					LoginClicked = true; //ÉèÖÃµÇÂ¼°´Å¥Îªtrue
+					SignUpClicked = false; //ÉèÖÃ×¢²á°´Å¥Îªfalse
+					ExitClicked = false; //ÉèÖÃÍË³ö°´Å¥Îªfalse
+				}
+				else if (isPointInsideRectangle(x, y, SignUpLeft, SignUpTop, SignUpRight, SignUpDown))
+				{
+					LoginClicked = false; //ÉèÖÃµÇÂ¼°´Å¥Îªfalse
+					SignUpClicked = true; //ÉèÖÃ×¢²á°´Å¥Îªtrue
+					ExitClicked = false; //ÉèÖÃÍË³ö°´Å¥Îªfalse
+				}
+				else if (isPointInsideRectangle(x, y, ExitLeft, ExitTop, ExitRight, ExitDown))
+				{
+					LoginClicked = false; //ÉèÖÃµÇÂ¼°´Å¥Îªfalse
+					SignUpClicked = false; //ÉèÖÃ×¢²á°´Å¥Îªfalse
+					ExitClicked = true; //ÉèÖÃÍË³ö°´Å¥Îªtrue
+				}
 			}
+			else if (msg.uMsg == WM_LBUTTONUP) //¼ì²âÊó±ê×ó¼üÊÇ·ñÌ§Æğ
+			{
+				if (LoginClicked) 
+				{
+					char Account[20];  // ÓÃÓÚ´æ´¢ÊäÈëµÄÓÃ»§Ãû
+					char Password[20]; //ÓÃÓÚ´æ´¢ÊäÈëµÄÃÜÂë
+					InputBox(Account,20, "Your Accunt:(In less than 10 character)","Account","Your Account",500,500,false);
+					InputBox(Password, 20, "Your Password:(In less than 10 character)");
+				}
+				else if (SignUpClicked)
+				{
 
+				}
+
+			}
 		}
 	}
 }
 
-void DrawButten(int left, int top, int right, int bottom,const char* text)
+void DrawButten(int left, int top, int right, int bottom, const char* text) //»æÖÆ±ê×¼°´Å¥
 {
-	solidroundrect(left, top, right, bottom, 50, 50);
-	outtextxy(left + 10, top + 10, text);
+	setfillcolor(LIGHTGRAY);
+	solidroundrect(left, top, right, bottom, 50, 50); //ÑùÊ½ºÍ´óĞ¡
+	outtextxy(left + 10, top + 10, text);//Êä³öÎÄ×Ö
 }
 
 bool isPointInsideRectangle(int x, int y, int left, int top, int right, int bottom)
