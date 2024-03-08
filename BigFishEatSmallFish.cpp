@@ -2,24 +2,52 @@
 #include <conio.h>
 #include <stdio.h>
 
-#define return_value //关键返回值
-
 // 功能模块
 bool isPointInsideRectangle(int x, int y, int left, int top, int right, int bottom); //鼠标检测模块
 void DrawButten(int left, int top, int right, int bottom, const char* text); //创建游戏标准按钮
 //游戏模块
 int starting();
+int game();
 
 
 int main()//主函数
 {
+	int situation;//状态函数
 	initgraph(1920, 1080);//画布尺寸
-	starting(); //进入程序界面
+	
+	situation = starting();//进入程序界面
+	if (situation == 1)
+	{
+		
+		cleardevice();
+		int LoginLeft = 860, LoginTop = 290, LoginRight = 1060, LoginDown = 390;
+		DrawButten(LoginLeft, LoginTop, LoginRight, LoginDown, "login");
+		while (1)
+		{
+
+		}
+	}
+	else if (situation == 2)
+	{
+		cleardevice();
+		int LoginLeft = 860, LoginTop = 290, LoginRight = 1060, LoginDown = 390;
+		DrawButten(LoginLeft, LoginTop, LoginRight, LoginDown, "signin");
+		while (1)
+		{
+
+		}
+	}
 	return 0;
 }
 
 int starting()
 {
+	initgraph(1920, 1080);
+	int situation;
+	IMAGE img;
+	loadimage(&img, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/background.jpg", 1920, 1080, true);
+	// Display the image
+	putimage(0, 0, &img);
 	int LoginLeft = 860, LoginTop = 290, LoginRight = 1060, LoginDown = 390; //Login按钮参数
 	int SignUpLeft = 860, SignUpTop = 490, SignUpRight = 1060, SignUpDown = 590;//SignUp按钮参数
 	int ExitLeft = 860, ExitTop = 690, ExitRight = 1060, ExitDown = 790;//退出按钮参数
@@ -65,15 +93,35 @@ int starting()
 				{
 					char Account[20];  // 用于存储输入的用户名
 					char Password[20]; //用于存储输入的密码
-					InputBox(Account,20, "Your Accunt:(In less than 10 character)","Account","Your Account",0,0,false);//获取用户账户
-					InputBox(Password, 20, "Your Password:(In less than 10 character)","Password","Your Password",0,0,false);//获取用户密码
+					InputBox(Account,20, "Your Accunt:(小于10个字符，请不要输入空格，且如果不需要输入账户，则不要在输入框中输入任何内容直接点击确定)","Account","\0",0,0,true);//获取用户账户
+					if (Account[0] != '\0')
+					{
+						InputBox(Password, 20, "小于10个字符，请不要输入空格，且如果不需要输入账户，则不要在输入框中输入任何内容直接点击确定", "Password", "\0", 0, 0,true);//获取用户密码
+						situation = 1;
+						return situation;
+					}
+					else
+					{
+						
+					}
+					
+					
 				}
 				else if (SignUpClicked)
 				{
 					char Account[20];
 					char Password[20];
-					InputBox(Account, 20, "Your Accunt:(In less than 10 character)", "Account", "Your Account",0,0,false);//获取用户账户
-					InputBox(Password, 20, "Your Password:(In less than 10 character)", "Password", "Your Password",0,0,false);//获取用户密码
+					InputBox(Account, 20, "Your Accunt:(小于10个字符，请不要输入空格，且如果不需要输入账户，则不要在输入框中输入任何内容直接点击确定)", "Account", "\0", 0, 0, true);//获取用户账户
+					if (Account[0] != '\0')
+					{
+						InputBox(Password, 20, "Your Password:(In less than 10 character)", "Password", "\0", 0, 0, false);//获取用户密码
+						situation = 2;
+						return situation;
+					}
+					else
+					{
+
+					}
 				}
 				else if (ExitClicked)
 				{
@@ -83,13 +131,14 @@ int starting()
 			}
 		}
 	}
+	
 }
 
 void DrawButten(int left, int top, int right, int bottom, const char* text) //绘制标准按钮
 {
 	setfillcolor(LIGHTGRAY);
 	solidroundrect(left, top, right, bottom, 10, 10); //样式和大小
-	settextstyle(left + 10, top + 10, text);//输出文字
+	outtextxy(left + 10, top + 10, text);//输出文字
 }
 
 bool isPointInsideRectangle(int x, int y, int left, int top, int right, int bottom)
