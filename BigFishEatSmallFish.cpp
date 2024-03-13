@@ -1,12 +1,24 @@
 #include <graphics.h>
 #include <conio.h>
 #include <stdio.h>
+#include <time.h>
+#pragma comment(lib, "MSIMG32.LIB")
+
+void transparentimage3(IMAGE* dstimg, int x, int y, IMAGE* srcimg)
+{
+	HDC dstDC = GetImageHDC(dstimg);
+	HDC srcDC = GetImageHDC(srcimg);
+	int w = srcimg -> getwidth();
+	int h = srcimg->getheight();
+	BLENDFUNCTION bf = { AC_SRC_OVER, 0, 255, AC_SRC_ALPHA };
+	A
+}
 
 // 功能模块
 bool isPointInsideRectangle(int x, int y, int left, int top, int right, int bottom); //鼠标检测模块
 void DrawButten(int left, int top, int right, int bottom, const char* text); //创建游戏标准按钮
 void PlayerFish(int x,int y);
-void EatedFish();
+void EatedFish(int x,int y);
 //游戏模块
 int starting();
 int game();
@@ -157,7 +169,7 @@ int game()
 		putimage(0, 0, &background, SRCCOPY);// 在虚拟画布上绘制背景
 
 		PlayerFish(x, y);
-
+		EatenFish(x,y,level);
 		FlushBatchDraw(); // 刷新缓冲区，将图像一次性绘制到屏幕上
 	}
 
@@ -170,4 +182,33 @@ void PlayerFish(int x,int y)
 	IMAGE PlayerFish;
 	loadimage(&PlayerFish, "C:/Users/Cheng/Desktop/test.jpg", 20, 20, true); // 在虚拟画布上绘制小鱼
 	putimage(x, y, &PlayerFish);
+}
+
+void EatenFish(int x, int y,int level)
+{
+	IMAGE fish[19];
+	int random_x, random_y;
+	while (1)
+	{
+		while (random_x == x)
+		{
+			srand(time(NULL));
+			random_x = rand() % 1920;
+		}
+		while (random_y == y)
+		{
+			srand(time(NULL));
+			random_x = rand() % 1080;
+		}
+		for (int i = 0; i < 19; i++)
+		{
+			srand(time(NULL));
+			int random_fish;
+			random_fish = rand() % (i + 2);
+			loadimage(&fish[random_fish], "", true);
+		}
+
+
+		
+	}
 }
