@@ -5,9 +5,12 @@
 // 功能模块
 bool isPointInsideRectangle(int x, int y, int left, int top, int right, int bottom); //鼠标检测模块
 void DrawButten(int left, int top, int right, int bottom, const char* text); //创建游戏标准按钮
+void PlayerFish(int x,int y);
+void EatedFish();
 //游戏模块
 int starting();
 int game();
+int History();
 
 
 int main()//主函数
@@ -20,24 +23,13 @@ int main()//主函数
 	{
 		
 		cleardevice();
-		int LoginLeft = 860, LoginTop = 290, LoginRight = 1060, LoginDown = 390;
-		DrawButten(LoginLeft, LoginTop, LoginRight, LoginDown, "login");
-		while (1)
-		{
-
-		}
+		game();
 	}
 	else if (situation == 2)
 	{
 		cleardevice();
-		int LoginLeft = 860, LoginTop = 290, LoginRight = 1060, LoginDown = 390;
-		DrawButten(LoginLeft, LoginTop, LoginRight, LoginDown, "signin");
-		while (1)
-		{
-
-		}
+		return 0;
 	}
-	return 0;
 }
 
 int starting()
@@ -97,7 +89,7 @@ int starting()
 					if (Account[0] != '\0')
 					{
 						InputBox(Password, 20, "小于10个字符，请不要输入空格，且如果不需要输入账户，则不要在输入框中输入任何内容直接点击确定", "Password", "\0", 0, 0,true);//获取用户密码
-						situation = 1;
+						situation = 1; 
 						return situation;
 					}
 					else
@@ -144,4 +136,38 @@ void DrawButten(int left, int top, int right, int bottom, const char* text) //绘
 bool isPointInsideRectangle(int x, int y, int left, int top, int right, int bottom)
 {
 	return (x >= left && x <= right && y >= top && y <= bottom); //判断是否在按钮内
+}
+
+int game()
+{
+	initgraph(1920, 1080); // 初始化图形窗口
+
+	IMAGE background;
+	loadimage(&background, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/background.jpg", 1920, 1080, true);
+
+	while (1)
+	{
+		MOUSEMSG msg = GetMouseMsg();
+		int x, y;
+		x = msg.x;
+		y = msg.y;
+
+		BeginBatchDraw(); // 开始双缓冲绘图
+
+		putimage(0, 0, &background, SRCCOPY);// 在虚拟画布上绘制背景
+
+		PlayerFish(x, y);
+
+		FlushBatchDraw(); // 刷新缓冲区，将图像一次性绘制到屏幕上
+	}
+
+	closegraph(); // 关闭图形窗口
+}
+
+void PlayerFish(int x,int y)
+{
+	
+	IMAGE PlayerFish;
+	loadimage(&PlayerFish, "C:/Users/Cheng/Desktop/test.jpg", 20, 20, true); // 在虚拟画布上绘制小鱼
+	putimage(x, y, &PlayerFish);
 }
