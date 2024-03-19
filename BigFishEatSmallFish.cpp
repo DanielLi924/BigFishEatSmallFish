@@ -2,23 +2,28 @@
 #include <conio.h>
 #include <stdio.h>
 #include <time.h>
+#include <iostream>
+#include <string>
+#include <vector>
 #pragma comment(lib, "MSIMG32.LIB")
 
+
+
+// 功能模块
 void transparentimage3(IMAGE* dstimg, int x, int y, IMAGE* srcimg) //实现透明图片输出
 {
 	HDC dstDC = GetImageHDC(dstimg);
 	HDC srcDC = GetImageHDC(srcimg);
-	int w = srcimg -> getwidth();
+	int w = srcimg->getwidth();
 	int h = srcimg->getheight();
 	BLENDFUNCTION bf = { AC_SRC_OVER, 0, 255, AC_SRC_ALPHA };
 	AlphaBlend(dstDC, x, y, w, h, srcDC, 0, 0, w, h, bf);
 }
-
-// 功能模块
 bool isPointInsideRectangle(int x, int y, int left, int top, int right, int bottom); //鼠标检测模块
 void DrawButten(int left, int top, int right, int bottom, const char* text); //创建游戏标准按钮
-void PlayerFish(int x,int y);
+void PlayerFish(int x, int y);
 void EatenFish(int x, int y, int level);
+bool LoginSystem(char* username, char* password);
 //游戏模块
 int starting();
 int game();
@@ -29,11 +34,11 @@ int main()//主函数
 {
 	int situation;//状态函数
 	initgraph(1920, 1080);//画布尺寸
-	
+
 	situation = starting();//进入程序界面
 	if (situation == 1)
 	{
-		
+
 		cleardevice();
 		game();
 	}
@@ -55,9 +60,9 @@ int starting()
 	int LoginLeft = 860, LoginTop = 290, LoginRight = 1060, LoginDown = 390; //Login按钮参数
 	int SignUpLeft = 860, SignUpTop = 490, SignUpRight = 1060, SignUpDown = 590;//SignUp按钮参数
 	int ExitLeft = 860, ExitTop = 690, ExitRight = 1060, ExitDown = 790;//退出按钮参数
-	DrawButten(LoginLeft,LoginTop, LoginRight, LoginDown, "login"); //绘制登录按钮
+	DrawButten(LoginLeft, LoginTop, LoginRight, LoginDown, "login"); //绘制登录按钮
 	DrawButten(SignUpLeft, SignUpTop, SignUpRight, SignUpDown, "SignUp"); //绘制注册按钮
-	DrawButten(ExitLeft, ExitTop, ExitRight,ExitDown, "Exit"); //绘制退出图标
+	DrawButten(ExitLeft, ExitTop, ExitRight, ExitDown, "Exit"); //绘制退出图标
 	bool LoginClicked = false; //设置登录按钮为false
 	bool SignUpClicked = false; //设置注册按钮为false
 	bool ExitClicked = false; //设置退出按钮为false
@@ -93,23 +98,27 @@ int starting()
 			}
 			else if (msg.uMsg == WM_LBUTTONUP) //检测鼠标左键是否抬起
 			{
-				if (LoginClicked) 
+				if (LoginClicked)
 				{
 					char Account[20];  // 用于存储输入的用户名
 					char Password[20]; //用于存储输入的密码
-					InputBox(Account,20, "Your Accunt:(小于10个字符，请不要输入空格，且如果不需要输入账户，则不要在输入框中输入任何内容直接点击确定)","Account","\0",0,0,true);//获取用户账户
+					InputBox(Account, 20, "Your Accunt:(小于10个字符，请不要输入空格，且如果不需要输入账户，则不要在输入框中输入任何内容直接点击确定)", "Account", "\0", 0, 0, true);//获取用户账户
 					if (Account[0] != '\0')
 					{
-						InputBox(Password, 20, "小于10个字符，请不要输入空格，且如果不需要输入账户，则不要在输入框中输入任何内容直接点击确定", "Password", "\0", 0, 0,true);//获取用户密码
-						situation = 1; 
+						InputBox(Password, 20, "小于10个字符，请不要输入空格，且如果不需要输入账户，则不要在输入框中输入任何内容直接点击确定", "Password", "\0", 0, 0, true);//获取用户密码
+
+					}
+					if (LoginSystem(Account, Password))
+					{
+						situation = 1;
 						return situation;
 					}
 					else
 					{
-						
+
 					}
-					
-					
+
+
 				}
 				else if (SignUpClicked)
 				{
@@ -135,7 +144,7 @@ int starting()
 			}
 		}
 	}
-	
+
 }
 
 void DrawButten(int left, int top, int right, int bottom, const char* text) //绘制标准按钮
@@ -169,26 +178,26 @@ int game()
 		putimage(0, 0, &background, SRCCOPY);// 在虚拟画布上绘制背景
 
 		PlayerFish(x, y);
-		
+
 		FlushBatchDraw(); // 刷新缓冲区，将图像一次性绘制到屏幕上
 	}
 
 	closegraph(); // 关闭图形窗口
 }
 
-void PlayerFish(int x,int y)
+void PlayerFish(int x, int y)
 {
-	
+
 	IMAGE PlayerFish;
 	loadimage(&PlayerFish, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/PlayerFish.png", 100, 100, true); // 在虚拟画布上绘制小鱼
 	transparentimage3(NULL, x, y, &PlayerFish);
 
 }
-
+/*
 void EatenFish(int x, int y,int level)
 {
-	IMAGE fish[19];
-	int random_x, random_y;
+	IMAGE fish[19]; //创建20个鱼作为被玩家吃的对象
+	int random_x, random_y; //作为每次生成鱼的坐标
 	while (1)
 	{
 		while (random_x == x)
@@ -206,10 +215,21 @@ void EatenFish(int x, int y,int level)
 			srand(time(NULL));
 			int random_fish;
 			random_fish = rand() % (i + 2);
-			loadimage(&fish[random_fish], "", true);
+			loadimage(&fish[random_fish], "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/PlayerFish.png", true);
 		}
 
 
-		
+
 	}
+}
+*/
+bool LoginSystem(char* username, char* password)//账号密码数据库
+{
+	struct User
+	{
+		char username;
+		char password;
+	};
+
+
 }
