@@ -1,40 +1,66 @@
 #include <graphics.h>
 #include <conio.h>
 #include <stdio.h>
+#include <time.h>
+#include <iostream>
+#include <string>
+#include <vector>
+#pragma comment(lib, "MSIMG32.LIB")
+#pragma warning(disable:4996)
+
+
 
 // 功能模块
+void transparentimage3(IMAGE* dstimg, int x, int y, IMAGE* srcimg) //实现透明图片输出
+{
+	HDC dstDC = GetImageHDC(dstimg);
+	HDC srcDC = GetImageHDC(srcimg);
+	int w = srcimg->getwidth();
+	int h = srcimg->getheight();
+	BLENDFUNCTION bf = { AC_SRC_OVER, 0, 255, AC_SRC_ALPHA };
+	AlphaBlend(dstDC, x, y, w, h, srcDC, 0, 0, w, h, bf);
+}
 bool isPointInsideRectangle(int x, int y, int left, int top, int right, int bottom); //鼠标检测模块
 void DrawButten(int left, int top, int right, int bottom, const char* text); //创建游戏标准按钮
-void PlayerFish(int x,int y);
-void EatedFish();
+void PlayerFish(int x, int y);
+//void EatenFish(int x, int y, int level);
+bool UserData(char* username, char* password, bool check);
+
+typedef struct User //结构体用来存储用户数据
+{
+	char* username;
+	char* password;
+	int score;
+};
+struct User* users = NULL;
+int num_users = 0;
+
+
 //游戏模块
 int starting();
 int game();
-int History();
+//int History();
 
 
 int main()//主函数
 {
-	int situation;//状态函数
+	int situation = 0;//状态函数
 	initgraph(1920, 1080);//画布尺寸
-	
 	situation = starting();//进入程序界面
 	if (situation == 1)
 	{
-		
-		cleardevice();
 		game();
 	}
 	else if (situation == 2)
 	{
-		cleardevice();
-		return 0;
+		starting();
+
 	}
+	return 0;
 }
 
 int starting()
 {
-	initgraph(1920, 1080);
 	int situation;
 	IMAGE img;
 	loadimage(&img, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/background.jpg", 1920, 1080, true);
@@ -43,9 +69,9 @@ int starting()
 	int LoginLeft = 860, LoginTop = 290, LoginRight = 1060, LoginDown = 390; //Login按钮参数
 	int SignUpLeft = 860, SignUpTop = 490, SignUpRight = 1060, SignUpDown = 590;//SignUp按钮参数
 	int ExitLeft = 860, ExitTop = 690, ExitRight = 1060, ExitDown = 790;//退出按钮参数
-	DrawButten(LoginLeft,LoginTop, LoginRight, LoginDown, "login"); //绘制登录按钮
+	DrawButten(LoginLeft, LoginTop, LoginRight, LoginDown, "login"); //绘制登录按钮
 	DrawButten(SignUpLeft, SignUpTop, SignUpRight, SignUpDown, "SignUp"); //绘制注册按钮
-	DrawButten(ExitLeft, ExitTop, ExitRight,ExitDown, "Exit"); //绘制退出图标
+	DrawButten(ExitLeft, ExitTop, ExitRight, ExitDown, "Exit"); //绘制退出图标
 	bool LoginClicked = false; //设置登录按钮为false
 	bool SignUpClicked = false; //设置注册按钮为false
 	bool ExitClicked = false; //设置退出按钮为false
@@ -81,25 +107,29 @@ int starting()
 			}
 			else if (msg.uMsg == WM_LBUTTONUP) //检测鼠标左键是否抬起
 			{
-				if (LoginClicked) 
+				if (LoginClicked)//登录界面
 				{
 					char Account[20];  // 用于存储输入的用户名
 					char Password[20]; //用于存储输入的密码
-					InputBox(Account,20, "Your Accunt:(小于10个字符，请不要输入空格，且如果不需要输入账户，则不要在输入框中输入任何内容直接点击确定)","Account","\0",0,0,true);//获取用户账户
+					InputBox(Account, 20, "Your Accunt:(小于10个字符，请不要输入空格，且如果不需要输入账户，则不要在输入框中输入任何内容直接点击确定)", "Account", "\0", 0, 0, true);//获取用户账户
 					if (Account[0] != '\0')
 					{
-						InputBox(Password, 20, "小于10个字符，请不要输入空格，且如果不需要输入账户，则不要在输入框中输入任何内容直接点击确定", "Password", "\0", 0, 0,true);//获取用户密码
-						situation = 1; 
+						InputBox(Password, 20, "小于10个字符，请不要输入空格，且如果不需要输入账户，则不要在输入框中输入任何内容直接点击确定", "Password", "\0", 0, 0, true);//获取用户密码
+
+					}
+					if (UserData(Account, Password, true))
+					{
+						situation = 1;
 						return situation;
 					}
 					else
 					{
-						
+						situation = 2;
+						return situation;
 					}
-					
-					
+
 				}
-				else if (SignUpClicked)
+				else if (SignUpClicked)//注册界面
 				{
 					char Account[20];
 					char Password[20];
@@ -107,12 +137,11 @@ int starting()
 					if (Account[0] != '\0')
 					{
 						InputBox(Password, 20, "Your Password:(In less than 10 character)", "Password", "\0", 0, 0, false);//获取用户密码
-						situation = 2;
-						return situation;
-					}
-					else
-					{
-
+						if (UserData(Account, Password, false))
+						{
+							situation = 2;
+							return situation;
+						}
 					}
 				}
 				else if (ExitClicked)
@@ -123,7 +152,7 @@ int starting()
 			}
 		}
 	}
-	
+
 }
 
 void DrawButten(int left, int top, int right, int bottom, const char* text) //绘制标准按钮
@@ -140,11 +169,10 @@ bool isPointInsideRectangle(int x, int y, int left, int top, int right, int bott
 
 int game()
 {
-	initgraph(1920, 1080); // 初始化图形窗口
-
 	IMAGE background;
 	loadimage(&background, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/background.jpg", 1920, 1080, true);
-
+	// Display the image
+	putimage(0, 0, &background);
 	while (1)
 	{
 		MOUSEMSG msg = GetMouseMsg();
@@ -164,10 +192,86 @@ int game()
 	closegraph(); // 关闭图形窗口
 }
 
-void PlayerFish(int x,int y)
+void PlayerFish(int x, int y)
 {
-	
+
 	IMAGE PlayerFish;
-	loadimage(&PlayerFish, "C:/Users/Cheng/Desktop/test.jpg", 20, 20, true); // 在虚拟画布上绘制小鱼
-	putimage(x, y, &PlayerFish);
+	loadimage(&PlayerFish, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/PlayerFish.png", 100, 100, true); // 在虚拟画布上绘制小鱼
+	transparentimage3(NULL, x, y, &PlayerFish);
+
 }
+/*
+void EatenFish(int x, int y,int level)
+{
+	IMAGE fish[19]; //创建20个鱼作为被玩家吃的对象
+	int random_x, random_y; //作为每次生成鱼的坐标
+	while (1)
+	{
+		while (random_x == x)
+		{
+			srand(time(NULL));
+			random_x = rand() % 1920;
+		}
+		while (random_y == y)
+		{
+			srand(time(NULL));
+			random_x = rand() % 1080;
+		}
+		for (int i = 0; i < 19; i++)
+		{
+			srand(time(NULL));
+			int random_fish;
+			random_fish = rand() % (i + 2);
+			loadimage(&fish[random_fish], "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/PlayerFish.png", true);
+		}
+
+
+
+	}
+}
+*/
+bool UserData(char* username, char* password, bool check)
+{
+	if (check)
+	{
+		// 进行账号密码检查的代码
+		for (int i = 0; i < num_users; i++) {
+			if (strcmp(users[i].username, username) == 0 && strcmp(users[i].password, password) == 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+	else {
+		// 添加新用户数据
+		num_users++; // 增加用户数量
+		// 重新分配内存以容纳新的用户数据
+		struct User* temp = (struct User*)realloc(users, num_users * sizeof(struct User));
+		if (temp == NULL) {
+			// 内存分配失败
+			printf("Memory allocation failed.\n");
+			return false;
+		}
+		// 更新 users 指针
+		users = temp;
+		// 为新用户的 username 和 password 分配内存并复制字符串
+		users[num_users - 1].username = (char*)malloc(strlen(username) + 1);
+		if (users[num_users - 1].username == NULL) {
+			printf("Memory allocation failed.\n");
+			return false;
+		}
+		strcpy(users[num_users - 1].username, username);
+		users[num_users - 1].password = (char*)malloc(strlen(password) + 1);
+		if (users[num_users - 1].password == NULL) {
+			printf("Memory allocation failed.\n");
+			// 可以选择释放之前分配的内存
+			free(users[num_users - 1].username);
+			return false;
+		}
+		strcpy(users[num_users - 1].password, password);
+		users[num_users - 1].score = 0; // 假设初始分数为 0
+		printf("User data stored successfully!\n");
+		return true;
+	}
+}
+
