@@ -23,11 +23,25 @@ bool isPointInsideRectangle(int x, int y, int left, int top, int right, int bott
 void DrawButten(int left, int top, int right, int bottom, const char* text); //创建游戏标准按钮
 void PlayerFish(int x, int y);
 void EatenFish(int x, int y, int level);
-bool LoginSystem(char* username, char* password);
+bool LoginCheck(char* username, char* password);
+void UserData(char* username, char* password);
+
+struct User //结构体
+{
+	char username[20];
+	char password[20];
+	int score;
+};
+
+struct User UserGroups[1];
+
+struct User** users = NULL;
+int num_users = 0;
+
 //游戏模块
 int starting();
 int game();
-int History();
+//int History();
 
 
 int main()//主函数
@@ -39,19 +53,17 @@ int main()//主函数
 	if (situation == 1)
 	{
 
-		cleardevice();
 		game();
 	}
 	else if (situation == 2)
 	{
-		cleardevice();
+		situation = starting();//进入程序界面
 		return 0;
 	}
 }
 
 int starting()
 {
-	initgraph(1920, 1080);
 	int situation;
 	IMAGE img;
 	loadimage(&img, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/background.jpg", 1920, 1080, true);
@@ -108,16 +120,11 @@ int starting()
 						InputBox(Password, 20, "小于10个字符，请不要输入空格，且如果不需要输入账户，则不要在输入框中输入任何内容直接点击确定", "Password", "\0", 0, 0, true);//获取用户密码
 
 					}
-					if (LoginSystem(Account, Password))
+					if (LoginCheck(Account, Password))
 					{
 						situation = 1;
 						return situation;
 					}
-					else
-					{
-
-					}
-
 
 				}
 				else if (SignUpClicked)
@@ -128,6 +135,7 @@ int starting()
 					if (Account[0] != '\0')
 					{
 						InputBox(Password, 20, "Your Password:(In less than 10 character)", "Password", "\0", 0, 0, false);//获取用户密码
+						UserData(Account, Password);
 						situation = 2;
 						return situation;
 					}
@@ -161,11 +169,10 @@ bool isPointInsideRectangle(int x, int y, int left, int top, int right, int bott
 
 int game()
 {
-	initgraph(1920, 1080); // 初始化图形窗口
-
 	IMAGE background;
 	loadimage(&background, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/background.jpg", 1920, 1080, true);
-
+	// Display the image
+	putimage(0, 0, &background);
 	while (1)
 	{
 		MOUSEMSG msg = GetMouseMsg();
@@ -223,13 +230,36 @@ void EatenFish(int x, int y,int level)
 	}
 }
 */
-bool LoginSystem(char* username, char* password)//账号密码数据库
-{
-	struct User
-	{
-		char username;
-		char password;
-	};
+bool LoginCheck(char* username, char* password) {
+	// 在这里进行用户账号密码的验证
+	for (int i = 0; i < num_users; i++) {
+		if (strcmp(users[i]->username, username) == 0 && strcmp(users[i]->password, password) == 0) {
+			return true;
+		}
+	}
 
+	// 循环结束后输出错误信息
+	printf("Login failed: Invalid username or password.\n");
+	return false; // 验证失败
+}
+void UserData(char* username, char* password) {
+	// 检查是否已经存在相同的用户名
+	for (int i = 0; i < num_users; i++) {
+		if (strcmp(users[i]->username, username) == 0) {
+			printf("Username already exists.\n");
+			return;
+		}
+	}
 
+	// 动态分配内存并添加用户
+	struct User* new_user = (struct User*)malloc(sizeof(struct User));
+	strcpy_s(new_user->username, username);
+	strcpy_s(new_user->password, password);
+
+	// 扩展用户数组大小并添加新用户指针
+	num_users++;
+	users = (struct User**)realloc(users, num_users * sizeof(struct User*));
+	users[num_users - 1] = new_user;
+
+	printf("User registered successfully!\n");
 }
