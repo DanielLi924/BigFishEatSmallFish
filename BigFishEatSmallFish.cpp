@@ -1,6 +1,12 @@
 #include <graphics.h>
 #include <conio.h>
 #include <stdio.h>
+#include <time.h>
+#include <iostream>
+#include <string>
+#include <vector>
+#pragma comment(lib, "MSIMG32.LIB")
+#pragma warning(disable:4996)
 
 
 
@@ -16,8 +22,20 @@ void transparentimage3(IMAGE* dstimg, int x, int y, IMAGE* srcimg) //ÊµÏÖÍ¸Ã÷Í¼Æ
 }
 bool isPointInsideRectangle(int x, int y, int left, int top, int right, int bottom); //Êó±ê¼ì²âÄ£¿é
 void DrawButten(int left, int top, int right, int bottom, const char* text); //´´½¨ÓÎÏ·±ê×¼°´Å¥
-void PlayerFish(int x,int y);
-void EatedFish();
+void PlayerFish(int x, int y);
+void Eatenfish();
+bool UserData(char* username, char* password, bool check);
+
+typedef struct User //½á¹¹ÌåÓÃÀ´´æ´¢ÓÃ»§Êı¾İ
+{
+	char* username;
+	char* password;
+	int score;
+};
+struct User* users = NULL;
+int num_users = 0;
+
+
 //ÓÎÏ·Ä£¿é
 int starting();
 int game();
@@ -26,21 +44,23 @@ int game();
 
 int main()//Ö÷º¯Êı
 {
-	int situation = 0;//×´Ì¬º¯Êı
 	initgraph(1920, 1080);//»­²¼³ß´ç
-	
-	situation = starting();//½øÈë³ÌĞò½çÃæ
-	if (situation == 1)
+	while (1)
 	{
-		
-		cleardevice();
-		game();
+		int situation = 0;//×´Ì¬º¯Êı
+
+		situation = starting();
+		if (situation == 1)
+		{
+			game();
+		}
+		else if (situation == 2)
+		{
+			int s = situation;
+		}
+
 	}
-	else if (situation == 2)
-	{
-		cleardevice();
-		return 0;
-	}
+	return 0;
 }
 
 int starting()
@@ -91,25 +111,29 @@ int starting()
 			}
 			else if (msg.uMsg == WM_LBUTTONUP) //¼ì²âÊó±ê×ó¼üÊÇ·ñÌ§Æğ
 			{
-				if (LoginClicked) 
+				if (LoginClicked)//µÇÂ¼½çÃæ
 				{
 					char Account[20];  // ÓÃÓÚ´æ´¢ÊäÈëµÄÓÃ»§Ãû
 					char Password[20]; //ÓÃÓÚ´æ´¢ÊäÈëµÄÃÜÂë
 					InputBox(Account, 20, "Your Accunt:(Ğ¡ÓÚ10¸ö×Ö·û£¬Çë²»ÒªÊäÈë¿Õ¸ñ£¬ÇÒÈç¹û²»ĞèÒªÊäÈëÕË»§£¬Ôò²»ÒªÔÚÊäÈë¿òÖĞÊäÈëÈÎºÎÄÚÈİÖ±½Óµã»÷È·¶¨)", "Account", "\0", 0, 0, true);//»ñÈ¡ÓÃ»§ÕË»§
 					if (Account[0] != '\0')
 					{
-						InputBox(Password, 20, "Ğ¡ÓÚ10¸ö×Ö·û£¬Çë²»ÒªÊäÈë¿Õ¸ñ£¬ÇÒÈç¹û²»ĞèÒªÊäÈëÕË»§£¬Ôò²»ÒªÔÚÊäÈë¿òÖĞÊäÈëÈÎºÎÄÚÈİÖ±½Óµã»÷È·¶¨", "Password", "\0", 0, 0,true);//»ñÈ¡ÓÃ»§ÃÜÂë
-						situation = 1; 
+						InputBox(Password, 20, "Ğ¡ÓÚ10¸ö×Ö·û£¬Çë²»ÒªÊäÈë¿Õ¸ñ£¬ÇÒÈç¹û²»ĞèÒªÊäÈëÕË»§£¬Ôò²»ÒªÔÚÊäÈë¿òÖĞÊäÈëÈÎºÎÄÚÈİÖ±½Óµã»÷È·¶¨", "Password", "\0", 0, 0, true);//»ñÈ¡ÓÃ»§ÃÜÂë
+
+					}
+					if (UserData(Account, Password, true))
+					{
+						situation = 1;
 						return situation;
 					}
 					else
 					{
-						
+						situation = 2;
+						return situation;
 					}
-					
-					
+
 				}
-				else if (SignUpClicked)
+				else if (SignUpClicked)//×¢²á½çÃæ
 				{
 					char Account[20];
 					char Password[20];
@@ -117,12 +141,11 @@ int starting()
 					if (Account[0] != '\0')
 					{
 						InputBox(Password, 20, "Your Password:(In less than 10 character)", "Password", "\0", 0, 0, false);//»ñÈ¡ÓÃ»§ÃÜÂë
-						situation = 2;
-						return situation;
-					}
-					else
-					{
-
+						if (UserData(Account, Password, false))
+						{
+							situation = 2;
+							return situation;
+						}
 					}
 				}
 				else if (ExitClicked)
@@ -156,19 +179,24 @@ int game()
 	putimage(0, 0, &background);
 	while (1)
 	{
-		MOUSEMSG msg = GetMouseMsg();
-		int x, y;
-		x = msg.x;
-		y = msg.y;
+		while (1)
+		{
+			MOUSEMSG msg = GetMouseMsg();
+			int x, y;
+			x = msg.x;
+			y = msg.y;
 
-		BeginBatchDraw(); // ¿ªÊ¼Ë«»º³å»æÍ¼
+			BeginBatchDraw(); // ¿ªÊ¼Ë«»º³å»æÍ¼
 
-		putimage(0, 0, &background, SRCCOPY);// ÔÚĞéÄâ»­²¼ÉÏ»æÖÆ±³¾°
+			putimage(0, 0, &background, SRCCOPY);// ÔÚĞéÄâ»­²¼ÉÏ»æÖÆ±³¾°
 
-		PlayerFish(x, y);
+			PlayerFish(x, y);
+			Eatenfish();
 
-		FlushBatchDraw(); // Ë¢ĞÂ»º³åÇø£¬½«Í¼ÏñÒ»´ÎĞÔ»æÖÆµ½ÆÁÄ»ÉÏ
+			FlushBatchDraw(); // Ë¢ĞÂ»º³åÇø£¬½«Í¼ÏñÒ»´ÎĞÔ»æÖÆµ½ÆÁÄ»ÉÏ
+		}
 	}
+	
 
 	closegraph(); // ¹Ø±ÕÍ¼ĞÎ´°¿Ú
 }
@@ -177,6 +205,67 @@ void PlayerFish(int x, int y)
 {
 
 	IMAGE PlayerFish;
-	loadimage(&PlayerFish, "C:/Users/Cheng/Desktop/test.jpg", 20, 20, true); // ÔÚĞéÄâ»­²¼ÉÏ»æÖÆĞ¡Óã
-	putimage(x, y, &PlayerFish);
+	loadimage(&PlayerFish, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/PlayerFish.png", 100, 100, true); // ÔÚĞéÄâ»­²¼ÉÏ»æÖÆĞ¡Óã
+	transparentimage3(NULL, x, y, &PlayerFish);
+
 }
+
+void Eatenfish()
+{
+	int random_x;
+	int random_y;
+	srand(time(NULL));
+	random_x = rand() % 1920;
+	srand(time(NULL));
+	random_y = rand() % 1080;
+	IMAGE PlayerFish;
+	loadimage(&PlayerFish, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/eatenfish1.png", 100, 100, true); // ÔÚĞéÄâ»­²¼ÉÏ»æÖÆĞ¡Óã
+	transparentimage3(NULL, random_x, random_y, &PlayerFish);
+}
+
+
+bool UserData(char* username, char* password, bool check)
+{
+	if (check)
+	{
+		// ½øĞĞÕËºÅÃÜÂë¼ì²éµÄ´úÂë
+		for (int i = 0; i < num_users; i++) {
+			if (strcmp(users[i].username, username) == 0 && strcmp(users[i].password, password) == 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+	else {
+		// Ìí¼ÓĞÂÓÃ»§Êı¾İ
+		num_users++; // Ôö¼ÓÓÃ»§ÊıÁ¿
+		// ÖØĞÂ·ÖÅäÄÚ´æÒÔÈİÄÉĞÂµÄÓÃ»§Êı¾İ
+		struct User* temp = (struct User*)realloc(users, num_users * sizeof(struct User));
+		if (temp == NULL) {
+			// ÄÚ´æ·ÖÅäÊ§°Ü
+			printf("Memory allocation failed.\n");
+			return false;
+		}
+		// ¸üĞÂ users Ö¸Õë
+		users = temp;
+		// ÎªĞÂÓÃ»§µÄ username ºÍ password ·ÖÅäÄÚ´æ²¢¸´ÖÆ×Ö·û´®
+		users[num_users - 1].username = (char*)malloc(strlen(username) + 1);
+		if (users[num_users - 1].username == NULL) {
+			printf("Memory allocation failed.\n");
+			return false;
+		}
+		strcpy(users[num_users - 1].username, username);
+		users[num_users - 1].password = (char*)malloc(strlen(password) + 1);
+		if (users[num_users - 1].password == NULL) {
+			printf("Memory allocation failed.\n");
+			// ¿ÉÒÔÑ¡ÔñÊÍ·ÅÖ®Ç°·ÖÅäµÄÄÚ´æ
+			free(users[num_users - 1].username);
+			return false;
+		}
+		strcpy(users[num_users - 1].password, password);
+		users[num_users - 1].score = 0; // ¼ÙÉè³õÊ¼·ÖÊıÎª 0
+		printf("User data stored successfully!\n");
+		return true;
+	}
+}
+
