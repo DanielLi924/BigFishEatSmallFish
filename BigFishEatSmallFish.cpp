@@ -6,7 +6,9 @@
 #include <string>
 #include <vector>
 #pragma comment(lib, "MSIMG32.LIB")
-#pragma warning(disable:4996)
+
+#define BKWIDTH 1920; // ±³¾°¿í¶È
+#define BKHIGH  1080; // 
 
 
 
@@ -23,17 +25,30 @@ void transparentimage3(IMAGE* dstimg, int x, int y, IMAGE* srcimg) //ÊµÏÖÍ¸Ã÷Í¼Æ
 bool isPointInsideRectangle(int x, int y, int left, int top, int right, int bottom); //Êó±ê¼ì²âÄ£¿é
 void DrawButten(int left, int top, int right, int bottom, const char* text); //´´½¨ÓÎÏ·±ê×¼°´Å¥
 void PlayerFish(int x, int y);
-void Eatenfish();
+void EatenFish();
+void initfish(int type);
 bool UserData(char* username, char* password, bool check);
-int randomRange(int min, int max);
-void runFishAnimation();
-
 typedef struct User //½á¹¹ÌåÓÃÀ´´æ´¢ÓÃ»§Êý¾Ý
 {
 	char* username;
 	char* password;
 	int score;
 };
+
+struct Fish
+{
+	int x;
+	int y;
+	int dir;			//ÓãµÄ·½Ïò
+	int type;			//ÓãµÄÀàÐÍ
+	double rate;
+	int w;
+	int h;
+};
+const int FISH_MAX_NUMS = 20;
+struct Fish fish[FISH_MAX_NUMS];
+IMAGE fishIMG[20][2];
+
 struct User* users = NULL;
 int num_users = 0;
 
@@ -181,26 +196,21 @@ int game()
 	putimage(0, 0, &background);
 	while (1)
 	{
-	
-		while (1)
-		{
 			
 			
-			BeginBatchDraw(); // ¿ªÊ¼Ë«»º³å»æÍ¼
+		BeginBatchDraw(); // ¿ªÊ¼Ë«»º³å»æÍ¼
 
-			putimage(0, 0, &background, SRCCOPY);// ÔÚÐéÄâ»­²¼ÉÏ»æÖÆ±³¾°
+		putimage(0, 0, &background, SRCCOPY);// ÔÚÐéÄâ»­²¼ÉÏ»æÖÆ±³¾°
 
 			
 			
-			MOUSEMSG msg = GetMouseMsg();
-			int x, y;
-			x = msg.x;
-			y = msg.y;
-			PlayerFish(x, y);
-	                                     		runFishAnimation();
-
-			FlushBatchDraw(); // Ë¢ÐÂ»º³åÇø£¬½«Í¼ÏñÒ»´ÎÐÔ»æÖÆµ½ÆÁÄ»ÉÏ
-		}
+		MOUSEMSG msg = GetMouseMsg();
+		int x, y;
+		x = msg.x;
+		y = msg.y;
+		PlayerFish(x, y);
+		EatenFish();
+		FlushBatchDraw(); // Ë¢ÐÂ»º³åÇø£¬½«Í¼ÏñÒ»´ÎÐÔ»æÖÆµ½ÆÁÄ»ÉÏ
 	}
 	
 
@@ -214,66 +224,6 @@ void PlayerFish(int x, int y)
 	loadimage(&PlayerFish, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/PlayerFish.png", 100, 100, true); // ÔÚÐéÄâ»­²¼ÉÏ»æÖÆÐ¡Óã
 	transparentimage3(NULL, x, y, &PlayerFish);
 
-}
-
-typedef struct {
-	int x;
-	int y;
-} Fish;
-
-// Function to generate a random number within a range
-int randomRange(int min, int max) {
-	return min + rand() % (max - min + 1);
-}
-
-// Function to generate a new fish
-Fish generateFish() {
-	Fish newFish;
-	newFish.x = randomRange(0, 1919); // Generate random x-coordinate within game width
-	newFish.y = randomRange(0, 1079); // Generate random y-coordinate within game height
-	return newFish;
-}
-
-// Function to move the fish
-void moveFish(Fish* fish) {
-	// Example: Random movement
-	fish->x += randomRange(-1, 1); // Move fish randomly in x-direction
-	fish->y += randomRange(-1, 1); // Move fish randomly in y-direction
-
-	// Ensure fish stays within game boundaries
-	fish->x = (fish->x +1920) % 1920; // Wrap fish around if it goes out of screen horizontally
-	fish->y = (fish->y + 1080) % 1080; // Wrap fish around if it goes out of screen vertically
-}
-
-// Function to run the fish animation
-void runFishAnimation() 
-{
-	srand(time(NULL)); // Seed the random number generator
-
-	IMAGE EatenFish;
-	loadimage(&EatenFish, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/eatenfish1.png", 100, 100, true); // Load the fish image
-
-	// Create two fish
-	Fish fish1 = generateFish(); // Generate the first fish
-	Fish fish2 = generateFish(); // Generate the second fish
-
-	int i;
-	for (i = 0; i < 100; i++) { // Run animation loop
-		moveFish(&fish1); // Move the first fish
-		moveFish(&fish2); // Move the second fish
-
-		// Display fish positions
-		transparentimage3(NULL, fish1.x, fish1.y, &EatenFish); // Display the first fish
-		transparentimage3(NULL, fish2.x, fish2.y, &EatenFish); // Display the second fish
-
-		// Simulate game loop delay
-		Sleep(100); // Adjust sleep duration as needed for your game
-
-		// Clear the screen
-		cleardevice(); // Clear the graphics window
-	}
-
-	closegraph(); // Close graphics window
 }
 
 
@@ -321,4 +271,71 @@ bool UserData(char* username, char* password, bool check)
 		return true;
 	}
 }
+void initfish(int type)
+{
+	if (type == ROLE)
+	{
+		fish[type].x = BKWIDTH / 2 - 60;
+		fish[type].y = BKHIGH / 2 - 60;
+		fish[type].dir = ASPECT_RIGHT;
+		fish[type].type = ROLE;
+		fish[type].w = (FISH_MIN_W + 30);
+		fish[type].h = (int)(fish[type].w / fish[type].rate);
+	}
+	else
+	{
+		fish[type].type = rand() % (FISH_MAX_NUMS - 1) + 1;
+		int dir = rand() % 10 > 5 ? ASPECT_LEFT : ASPECT_RIGHT;		//Ó¢ÎÄÃ°ºÅ
+		fish[type].dir = dir;
+		fish[type].y = rand() % 90 * 10 + 50;
+		fish[type].x = dir == ASPECT_LEFT ? rand() % BOARD + BKWIDTH : -1 * rand() % BOARD;
+		fish[type].w = FISH_MIN_W + 20 * type;
+		fish[type].h = (int)(fish[type].w / fish[type].rate);
+	}
+}
+void loadresource()
+{
+	char filename[100] = { "" };
+	for (int i = 0; i < FISH_MAX_NUMS; i++)
+	{
+		initfish(i);
+		for (int j = 0; j < 2; j++)
+		{
+			switch (j)
+			{
+			case 0:
+				sprintf(filename, _T("E:/designprogramme/Cprogramme/BigfishEatSmallfish/image/fish%dleft.png"), i);
+				break;
+			case 1:
+				sprintf(filename, _T("E:/designprogramme/Cprogramme/BigfishEatSmallfish/image/fish%dright.png"), i);
+				break;
+			}
+			loadimage(&fishIMG[i][j], filename, fish[i].w, fish[i].h, true);				//ÔØÈëËõ·ÅÍ¼Æ¬
 
+		}
+	}
+}
+
+void Drawfish()
+{
+	for (int i = 0; i < rolegrade + 3; i++)						//ºóÆÚ¼ÓÉÏ·ÖÊý»úÖÆºóÌí¼ÓµÈ¼¶
+	{
+		transparentimage3(NULL, fish[i].x, fish[i].y, &fishIMG[i][fish[i].dir]);
+	}
+}
+
+void moveothers()
+{
+	for (int i = 1; i < FISH_MAX_NUMS; i++)
+	{
+		switch (fish[i].dir)
+		{
+		case ASPECT_LEFT:
+			fish[i].x -= 5;
+			break;
+		case ASPECT_RIGHT:
+			fish[i].x += 5;
+			break;
+		}
+	}
+}
