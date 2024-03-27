@@ -6,7 +6,8 @@
 #include <string>
 #include <vector>
 #pragma comment(lib, "MSIMG32.LIB")
-#pragma warning(disable:4996)
+//#pragma warning(disable:4996)
+
 
 
 
@@ -179,17 +180,21 @@ int game()
 	putimage(0, 0, &background);
 	while (1)
 	{
+	
 		while (1)
 		{
-			MOUSEMSG msg = GetMouseMsg();
-			int x, y;
-			x = msg.x;
-			y = msg.y;
-
+			
+			
 			BeginBatchDraw(); // 开始双缓冲绘图
 
 			putimage(0, 0, &background, SRCCOPY);// 在虚拟画布上绘制背景
 
+			
+			
+			MOUSEMSG msg = GetMouseMsg();
+			int x, y;
+			x = msg.x;
+			y = msg.y;
 			PlayerFish(x, y);
 			Eatenfish();
 
