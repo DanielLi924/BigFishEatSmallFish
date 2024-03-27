@@ -6,8 +6,7 @@
 #include <string>
 #include <vector>
 #pragma comment(lib, "MSIMG32.LIB")
-//#pragma warning(disable:4996)
-
+#pragma warning(disable:4996)
 
 
 
@@ -26,6 +25,8 @@ void DrawButten(int left, int top, int right, int bottom, const char* text); //¥
 void PlayerFish(int x, int y);
 void Eatenfish();
 bool UserData(char* username, char* password, bool check);
+int randomRange(int min, int max);
+void runFishAnimation();
 
 typedef struct User //Ω·ππÃÂ”√¿¥¥Ê¥¢”√ªß ˝æ›
 {
@@ -196,7 +197,7 @@ int game()
 			x = msg.x;
 			y = msg.y;
 			PlayerFish(x, y);
-			Eatenfish();
+	                                     		runFishAnimation();
 
 			FlushBatchDraw(); // À¢–¬ª∫≥Â«¯£¨Ω´ÕºœÒ“ª¥Œ–‘ªÊ÷∆µΩ∆¡ƒª…œ
 		}
@@ -215,17 +216,64 @@ void PlayerFish(int x, int y)
 
 }
 
-void Eatenfish()
+typedef struct {
+	int x;
+	int y;
+} Fish;
+
+// Function to generate a random number within a range
+int randomRange(int min, int max) {
+	return min + rand() % (max - min + 1);
+}
+
+// Function to generate a new fish
+Fish generateFish() {
+	Fish newFish;
+	newFish.x = randomRange(0, 1919); // Generate random x-coordinate within game width
+	newFish.y = randomRange(0, 1079); // Generate random y-coordinate within game height
+	return newFish;
+}
+
+// Function to move the fish
+void moveFish(Fish* fish) {
+	// Example: Random movement
+	fish->x += randomRange(-1, 1); // Move fish randomly in x-direction
+	fish->y += randomRange(-1, 1); // Move fish randomly in y-direction
+
+	// Ensure fish stays within game boundaries
+	fish->x = (fish->x +1920) % 1920; // Wrap fish around if it goes out of screen horizontally
+	fish->y = (fish->y + 1080) % 1080; // Wrap fish around if it goes out of screen vertically
+}
+
+// Function to run the fish animation
+void runFishAnimation() 
 {
-	int random_x;
-	int random_y;
-	srand(time(NULL));
-	random_x = rand() % 1920;
-	srand(time(NULL));
-	random_y = rand() % 1080;
-	IMAGE PlayerFish;
-	loadimage(&PlayerFish, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/eatenfish1.png", 100, 100, true); // ‘⁄–Èƒ‚ª≠≤º…œªÊ÷∆–°”„
-	transparentimage3(NULL, random_x, random_y, &PlayerFish);
+	srand(time(NULL)); // Seed the random number generator
+
+	IMAGE EatenFish;
+	loadimage(&EatenFish, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/eatenfish1.png", 100, 100, true); // Load the fish image
+
+	// Create two fish
+	Fish fish1 = generateFish(); // Generate the first fish
+	Fish fish2 = generateFish(); // Generate the second fish
+
+	int i;
+	for (i = 0; i < 100; i++) { // Run animation loop
+		moveFish(&fish1); // Move the first fish
+		moveFish(&fish2); // Move the second fish
+
+		// Display fish positions
+		transparentimage3(NULL, fish1.x, fish1.y, &EatenFish); // Display the first fish
+		transparentimage3(NULL, fish2.x, fish2.y, &EatenFish); // Display the second fish
+
+		// Simulate game loop delay
+		Sleep(100); // Adjust sleep duration as needed for your game
+
+		// Clear the screen
+		cleardevice(); // Clear the graphics window
+	}
+
+	closegraph(); // Close graphics window
 }
 
 
