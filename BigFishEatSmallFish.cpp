@@ -6,15 +6,15 @@
 #include <string>
 #include <vector>
 #include <windows.h>
+#include <time.h>
 #include <chrono> // 添加头文件以使用时间库
 #pragma comment(lib, "MSIMG32.LIB")
-#define LEVEL 10
+#define LEVEL 5
 #define PLAYER 0
 #define LEFT -1
-#define RIGHT 1;
-
-// 全局变量，用于记录上次移动的时间戳
-using namespace std::chrono;
+#define RIGHT 1
+#define FISH_MAX_NUMS 10
+#define TIMER_MAX 10
 
 struct Fish //单个鱼的属性
 {
@@ -97,6 +97,7 @@ void Fishload();
 void FishPut(int level);
 void control();
 void setrate();
+int ontimer(int duration, int id);
 
 struct User* users = NULL;
 int num_users = 0;
@@ -249,8 +250,6 @@ int game()
 
 	while (1)
 	{
-		control();
-		fishmove();
 		BeginBatchDraw(); // 开始双缓冲绘图
 		putimage(0, 0, &background, SRCCOPY);// 在虚拟画布上绘制背景
 
@@ -258,7 +257,12 @@ int game()
 		transparentimage3(NULL, fishs[0].x, fishs[0].y, &fishIMG[0][0]);
 
 		FlushBatchDraw(); // 刷新缓冲区，将图像一次性绘制到屏幕上
-
+		control();
+		if (ontimer(10, 0))
+		{
+			fishmove();
+		}
+		//resetothers();
 
 	}
 	closegraph(); // 关闭图形窗口
@@ -311,20 +315,29 @@ void Fishload()//加载全部鱼的图片（放到内存里）
 	}
 	
 } 
+int ontimer(int duration, int id)
+{
+	static int starttime[TIMER_MAX];
+	int endtime = clock();
+	if (endtime - starttime[id] >= duration)
+	{
+		starttime[id] = endtime;
+		return 1;
+	}
+	return 0;
+}
 void fishmove()					//后续还要修改这个函数加上
 {
-	for (int i = 1; i <= LEVEL + 3; i++)
+	for (int i = 1; i < FISH_MAX_NUMS; i++)
 	{
-		/*
-		if (fishs[i].x >= 1910 || fishs[i].x <= 10)
+		switch (fishs[i].dir)
 		{
-			fishs[i].dir = (-1) * fishs[i].dir;
-		}
-		*/
-		if (i <= LEVEL + 3)
-		{
-			fishs[i].x = fishs[i].x + fishs[i].dir * 1;
-
+		case LEFT:
+			fishs[i].x -= 1;
+			break;
+		case RIGHT:
+			fishs[i].x += 1;
+			break;
 		}
 	}
 }
