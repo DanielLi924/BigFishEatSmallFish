@@ -5,15 +5,22 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <windows.h>
+#include <chrono> // 添加头文件以使用时间库
 #pragma comment(lib, "MSIMG32.LIB")
-#define COUNTER 0
+#define LEVEL 10
 #define PLAYER 0
+#define LEFT -1
+#define RIGHT 1;
+
+// 全局变量，用于记录上次移动的时间戳
+using namespace std::chrono;
 
 struct Fish //单个鱼的属性
 {
 	int x;
 	int y;
-	int dir;			//鱼的方向
+	int dir;		//鱼的方向
 	int type;		//鱼的类型
 	double rate;
 	int w;
@@ -24,6 +31,44 @@ struct Fish //单个鱼的属性
 };
 struct Fish fishs[21];
 IMAGE fishIMG[21][2];
+struct msg
+{
+	USHORT message;					// 消息标识
+	union
+	{
+		// 鼠标消息的数据
+		struct
+		{
+			bool ctrl : 1;		// Ctrl 键是否按下
+			bool shift : 1;		// Shift 键是否按下
+			bool lbutton : 1;		// 鼠标左键是否按下
+			bool mbutton : 1;		// 鼠标中键是否按下
+			bool rbutton : 1;		// 鼠标右键
+			short x;				// 鼠标的 x 坐标
+			short y;				// 鼠标的 y 坐标
+			short wheel;			// 鼠标滚轮滚动值，为 120 的倍数
+		};
+
+		// 按键消息的数据
+		struct
+		{
+			BYTE vkcode;			// 按键的虚拟键码
+			BYTE scancode;			// 按键的扫描码（依赖于 OEM）
+			bool extended : 1;		// 按键是否是扩展键
+			bool prevdown : 1;		// 按键的前一个状态是否按下
+		};
+
+		// 字符消息的数据
+		TCHAR ch;
+
+		// 窗口消息的数据
+		struct
+		{
+			WPARAM wParam;
+			LPARAM lParam;
+		};
+	};
+};
 
 
 typedef struct User //结构体用来存储用户数据
@@ -47,11 +92,11 @@ bool isPointInsideRectangle(int x, int y, int left, int top, int right, int bott
 void DrawButten(int left, int top, int right, int bottom, const char* text); //创建游戏标准按钮
 void initfish(int type);
 bool UserData(char* username, char* password, bool check);
-void initfishrole();
-void initfish(int type);
+void fishmove();
 void Fishload();
 void FishPut(int level);
 void control();
+void setrate();
 
 struct User* users = NULL;
 int num_users = 0;
@@ -196,19 +241,24 @@ int starting()
 
 int game()
 {
-	void setrate();
+	setrate();
 	IMAGE background;
 	loadimage(&background, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/background.jpg", 1920, 1080, true);
 	// Display the image
 	Fishload();
-	BeginBatchDraw(); // 开始双缓冲绘图
+
 	while (1)
 	{
-		
-		putimage(0, 0, &background, SRCCOPY);// 在虚拟画布上绘制背景
-		FishPut(1);
-		FlushBatchDraw(); // 刷新缓冲区，将图像一次性绘制到屏幕上
 		control();
+		fishmove();
+		BeginBatchDraw(); // 开始双缓冲绘图
+		putimage(0, 0, &background, SRCCOPY);// 在虚拟画布上绘制背景
+
+		FishPut(LEVEL);
+		transparentimage3(NULL, fishs[0].x, fishs[0].y, &fishIMG[0][0]);
+
+		FlushBatchDraw(); // 刷新缓冲区，将图像一次性绘制到屏幕上
+
 
 	}
 	closegraph(); // 关闭图形窗口
@@ -217,64 +267,87 @@ int game()
 //-----------------------------------------------------------------------------------------------------------------------------------------
 
 
-void Fishload()
+void Fishload()//加载全部鱼的图片（放到内存里）
 {
-	char filename[100] = { "" };
+	MOUSEMSG msg = GetMouseMsg();
 	for (int i = 0; i < 21; i++)
 	{
-		initfish(i);
+		char filename[100] = { "" };
+		int type = i;
+		if (type == 0)
+		{
+			fishs[type].x = msg.x;
+			fishs[type].y = msg.y;
+			fishs[type].dir = LEFT; // 左
+			fishs[type].type = 0;
+			fishs[type].w = (LEVEL * 100);
+			fishs[type].h = (int)(fishs[type].w / fishs[type].rate);
+
+		}
+		else
+		{
+			fishs[type].type = rand() % (21 - 1) + 1;  // 生成一个1到20之间的随机数，用于表示鱼的类型
+			int dir = rand() % 10 > 5 ? LEFT : RIGHT;  // 生成一个随机数，若大于5则dir为0（表示左），否则为1（表示右）
+			fishs[type].dir = dir;  // 将随机生成的方向赋值给对应鱼的方向属性
+			fishs[type].y = rand() % 90 * 10 + 50;  // 生成一个50到950之间的随机数，用于表示鱼的y坐标
+			fishs[type].x = dir == 0 ? rand() % 400 + 1920 : -1 * rand() % 400;  // 若dir为0，则在1920到2320之间生成x坐标；否则在负400到0之间生成x坐标，用来判断鱼从左边还是右边出来
+			fishs[type].w = 100 + 20 * type;  // 根据鱼的类型计算鱼的宽度，宽度随类型增加而增加
+			fishs[type].h = (int)(fishs[type].w / fishs[type].rate);  // 根据鱼的宽高比计算鱼的高度
+		}
 		for (int j = 0; j < 2; j++)
 		{
 			switch (j)
 			{
 			case 0:
-				sprintf(filename, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/eatenfish%deft.png", i+1);
+				sprintf(filename, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/eatenfish%dleft.png", i);
 				break;
 			case 1:
-				sprintf(filename, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/eatenfish%dright.png", i+1);
+				sprintf(filename, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/eatenfish%dright.png", i);
 				break;
 			}
-			loadimage(&fishIMG[i][j], filename, fishs[i].w, fishs[i].h, true);				//载入缩放图片
+			loadimage(&fishIMG[i][j], filename, fishs[i].w, fishs[i].h, true); //载入缩放图片
+
+		}
+	}
+	
+} 
+void fishmove()					//后续还要修改这个函数加上
+{
+	for (int i = 1; i <= LEVEL + 3; i++)
+	{
+		/*
+		if (fishs[i].x >= 1910 || fishs[i].x <= 10)
+		{
+			fishs[i].dir = (-1) * fishs[i].dir;
+		}
+		*/
+		if (i <= LEVEL + 3)
+		{
+			fishs[i].x = fishs[i].x + fishs[i].dir * 1;
 
 		}
 	}
 }
-void initfish(int type)					//后续还要修改这个函数加上
-{
-	MOUSEMSG msg = GetMouseMsg();
-	if (type == 0)
-	{
-		fishs[type].x = msg.x;
-		fishs[type].y = msg.y;
-		fishs[type].dir = 0; // 左
-		fishs[type].type = 0;
-		fishs[type].w = (100 + 30);
-		fishs[type].h = (int)(fishs[type].w / fishs[type].rate);
-	}
-	else
-	{
-		fishs[type].type = rand() % (21 - 1) + 1;
-		int dir = rand() % 10 > 5 ? 0 : 1; //0 表示左，1表示右
-		fishs[type].dir = dir;
-		fishs[type].y = rand() % 90 * 10 + 50;
-		fishs[type].x = dir == 0 ? rand() % 400 + 1920 : -1 * rand() % 400; // 400 是边界判断
-		fishs[type].w = 100 + 20 * type;
-		fishs[type].h = (int)(fishs[type].w / fishs[type].rate);
-	}
-}
-
 
 void control()
 {
-	MOUSEMSG msg = GetMouseMsg();
+	ExMessage msg;
+	if (!peekmessage(&msg, EX_MOUSE))  // 如果没有鼠标消息
+	{
+		return;  // 直接跳出函数
+	}
+
+	// 有鼠标消息，则处理消息
 	fishs[0].x = msg.x;
 	fishs[0].y = msg.y;
 }
+
+
 void FishPut(int level)
 {
-	for (int i = 0; i < level + 3; i++)						//后期加上分数机制后添加等级
+	for (int i = 1; i < level + 3; i++)						//后期加上分数机制后添加等级
 	{
-		transparentimage3(NULL, fishs[i].x, fishs[i].y, &fishIMG[i][1]);
+		transparentimage3(NULL, fishs[i].x, fishs[i].y, &fishIMG[i][0]);
 	}
 }
 
@@ -350,3 +423,4 @@ bool UserData(char* username, char* password, bool check)
 		return true;
 	}
 }
+
