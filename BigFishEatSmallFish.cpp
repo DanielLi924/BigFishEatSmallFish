@@ -98,6 +98,9 @@ void FishPut(int level);
 void control();
 void setrate();
 int ontimer(int duration, int id);
+void AccountInput(char *Account, char *Password);
+void beginword();
+void printUser(char* Username);
 
 struct User* users = NULL;
 int num_users = 0;
@@ -147,10 +150,13 @@ int main()//主函数
 int starting()
 {
 	int situation;
-	IMAGE img;
-	loadimage(&img, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/background.jpg", 1920, 1080, true);
+	IMAGE background,text;
+	
+	loadimage(&background, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/background.jpg", 1920, 1080, true);
+	loadimage(&text, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/text.png", 800, 40, true);
 	// Display the image
-	putimage(0, 0, &img);
+	putimage(0, 0, &background);
+	putimage(550, 150, &text);
 	int LoginLeft = 860, LoginTop = 290, LoginRight = 1060, LoginDown = 390; //Login按钮参数
 	int SignUpLeft = 860, SignUpTop = 490, SignUpRight = 1060, SignUpDown = 590;//SignUp按钮参数
 	int ExitLeft = 860, ExitTop = 690, ExitRight = 1060, ExitDown = 790;//退出按钮参数
@@ -194,12 +200,11 @@ int starting()
 			{
 				if (LoginClicked)//登录界面
 				{
-					char Account[20];  // 用于存储输入的用户名
-					char Password[20]; //用于存储输入的密码
-					InputBox(Account, 20, "Your Accunt:(小于10个字符，请不要输入空格，且如果不需要输入账户，则不要在输入框中输入任何内容直接点击确定)", "Account", "\0", 0, 0, true);//获取用户账户
+					char Account[20];
+					char Password[20];
+					AccountInput(Account, Password);
 					if (Account[0] != '\0')
 					{
-						InputBox(Password, 20, "小于10个字符，请不要输入空格，且如果不需要输入账户，则不要在输入框中输入任何内容直接点击确定", "Password", "\0", 0, 0, true);//获取用户密码
 
 					}
 					if (UserData(Account, Password, true))
@@ -315,6 +320,7 @@ void Fishload()//加载全部鱼的图片（放到内存里）
 	}
 	
 } 
+
 int ontimer(int duration, int id)
 {
 	static int starttime[TIMER_MAX];
@@ -326,6 +332,7 @@ int ontimer(int duration, int id)
 	}
 	return 0;
 }
+
 void fishmove()					//后续还要修改这个函数加上
 {
 	for (int i = 1; i < FISH_MAX_NUMS; i++)
@@ -436,4 +443,99 @@ bool UserData(char* username, char* password, bool check)
 		return true;
 	}
 }
+
+void AccountInput(char* Account, char* Password)
+{
+	IMAGE background1;
+	loadimage(&background1, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/background.jpg", 1920, 1080, true);
+	char log[] = "Username";
+	LOGFONT Log{};
+	settextcolor(GREEN);
+	Log.lfQuality = ANTIALIASED_QUALITY;
+	Log.lfHeight = 80;
+	strcpy(Log.lfFaceName, "得意黑 斜体");
+	settextstyle(&Log);
+	char pas[] = "Password";
+	char username[100];
+	char password[100];
+	int index = 0;
+
+	putimage(0, 0, &background1);
+	outtextxy(100, 270, log);
+	outtextxy(100, 570, pas);
+
+	while (1)
+	{
+		char ch = _getch();
+		if (ch == '\r' || ch == '\n')
+		{
+			if (index > 0) // 检查是否输入了密码
+				break;
+		}
+		else if (ch == 8) // 检测是否为退格键
+		{
+			if (index > 0)
+			{
+				index--;
+				username[index] = '\0';
+				cleardevice(); // 清除屏幕上的内容
+				putimage(0, 0, &background1); // 重新绘制背景
+				outtextxy(100, 270, log); // 重新输出用户名
+				outtextxy(100, 570, pas); // 重新输出密码
+				outtextxy(100, 420, username); // 输出更新后的用户名
+			}
+		}
+		else
+		{
+			username[index++] = ch;
+			username[index] = '\0';
+			putimage(0, 0, &background1);
+			outtextxy(100, 270, log);
+			outtextxy(100, 570, pas);
+			outtextxy(100, 420, username);
+		}
+	}
+
+	index = 0; // 重置索引以接收密码输入
+
+	while (1)
+	{
+		char ch = _getch();
+		if (ch == '\r' || ch == '\n')
+		{
+			if (index > 0) // 检查是否输入了密码
+				break;
+		}
+		else if (ch == 8) // 检测是否为退格键
+		{
+			if (index > 0)
+			{
+				index--;
+				password[index] = '\0';
+				cleardevice(); // 清除屏幕上的内容
+				putimage(0, 0, &background1); // 重新绘制背景
+				outtextxy(100, 270, log); // 重新输出用户名
+				outtextxy(100, 570, pas); // 重新输出密码
+				outtextxy(100, 420, username); // 输出更新后的用户名
+				outtextxy(100, 670, password); // 输出更新后的密码
+			}
+		}
+		else
+		{
+			password[index++] = ch;
+			password[index] = '\0';
+			putimage(0, 0, &background1);
+			outtextxy(100, 270, log);
+			outtextxy(100, 570, pas);
+			outtextxy(100, 420, username);
+			outtextxy(100, 670, password);
+		}
+	}
+}
+
+
+
+
+
+
 
