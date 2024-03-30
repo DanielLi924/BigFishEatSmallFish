@@ -7,14 +7,22 @@
 #include <vector>
 #include <windows.h>
 #include <time.h>
+#include <stdbool.h>
 #include <chrono> // Ìí¼ÓÍ·ÎÄ¼şÒÔÊ¹ÓÃÊ±¼ä¿â
 #pragma comment(lib, "MSIMG32.LIB")
-#define LEVEL 5
+#define LEVEL 1
 #define PLAYER 0
-#define LEFT -1
+#define LEFT 0
 #define RIGHT 1
-#define FISH_MAX_NUMS 10
+#define FISH_MAX_NUMS 21
 #define TIMER_MAX 10
+#define BOARD 400
+#define BKWIDTH 1920
+#define BKHIGH 1080
+#define ROLE 0
+#define FISH_MIN_W 50
+int level;
+
 
 struct Fish //µ¥¸öÓãµÄÊôĞÔ
 {
@@ -90,7 +98,6 @@ void transparentimage3(IMAGE* dstimg, int x, int y, IMAGE* srcimg) //ÊµÏÖÍ¸Ã÷Í¼Æ
 }
 bool isPointInsideRectangle(int x, int y, int left, int top, int right, int bottom); //Êó±ê¼ì²âÄ£¿é
 void DrawButten(int left, int top, int right, int bottom, const char* text); //´´½¨ÓÎÏ·±ê×¼°´Å¥
-void initfish(int type);
 bool UserData(char* username, char* password, bool check);
 void fishmove();
 void Fishload();
@@ -99,8 +106,11 @@ void control();
 void setrate();
 int ontimer(int duration, int id);
 bool AccountInput(char *Account, char *Password, bool situation);
-void beginword();
-void printUser(char* Username);
+void resetothers();
+void initfish(int type);
+void loadresource();
+int gameover();
+int eatfish(int type);
 
 struct User* users = NULL;
 int num_users = 0;
@@ -160,6 +170,12 @@ int starting()
 	int LoginLeft = 860, LoginTop = 290, LoginRight = 1060, LoginDown = 390; //Login°´Å¥²ÎÊı
 	int SignUpLeft = 860, SignUpTop = 490, SignUpRight = 1060, SignUpDown = 590;//SignUp°´Å¥²ÎÊı
 	int ExitLeft = 860, ExitTop = 690, ExitRight = 1060, ExitDown = 790;//ÍË³ö°´Å¥²ÎÊı
+	LOGFONT Log{};
+	settextcolor(GREEN);
+	Log.lfQuality = ANTIALIASED_QUALITY;
+	Log.lfHeight = 50;
+	strcpy(Log.lfFaceName, "µÃÒâºÚ Ğ±Ìå");
+	settextstyle(&Log);
 	DrawButten(LoginLeft, LoginTop, LoginRight, LoginDown, "login"); //»æÖÆµÇÂ¼°´Å¥
 	DrawButten(SignUpLeft, SignUpTop, SignUpRight, SignUpDown, "SignUp"); //»æÖÆ×¢²á°´Å¥
 	DrawButten(ExitLeft, ExitTop, ExitRight, ExitDown, "Exit"); //»æÖÆÍË³öÍ¼±ê
@@ -241,9 +257,9 @@ int game()
 {
 	setrate();
 	IMAGE background;
-	loadimage(&background, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/background.jpg", 1920, 1080, true);
+	loadimage(&background, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/game.jpg", 1920, 1080, true);
 	// Display the image
-	Fishload();
+	loadresource();
 
 	while (1)
 	{
@@ -259,59 +275,67 @@ int game()
 		{
 			fishmove();
 		}
-		//resetothers();
+		resetothers();
+		
 
 	}
 	closegraph(); // ¹Ø±ÕÍ¼ĞÎ´°¿Ú
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------------
-
-
-void Fishload()//¼ÓÔØÈ«²¿ÓãµÄÍ¼Æ¬£¨·Åµ½ÄÚ´æÀï£©
+void initfish(int type)					//ºóĞø»¹ÒªĞŞ¸ÄÕâ¸öº¯Êı¼ÓÉÏ
 {
-	MOUSEMSG msg = GetMouseMsg();
-	for (int i = 0; i < 21; i++)
+	if (type == ROLE)
 	{
-		char filename[100] = { "" };
-		int type = i;
-		if (type == 0)
-		{
-			fishs[type].x = msg.x;
-			fishs[type].y = msg.y;
-			fishs[type].dir = LEFT; // ×ó
-			fishs[type].type = 0;
-			fishs[type].w = (LEVEL * 100);
-			fishs[type].h = (int)(fishs[type].w / fishs[type].rate);
+		fishs[type].x = BKWIDTH / 2 - 60;
+		fishs[type].y = BKHIGH / 2 - 60;
+		fishs[type].dir = RIGHT;
+		fishs[type].type = ROLE;
+		fishs[type].w = (FISH_MIN_W + 30);
+		fishs[type].h = (int)(fishs[type].w / fishs[type].rate);
+	}
+	else
+	{
+		fishs[type].type = rand() % (FISH_MAX_NUMS - 1) + 1;
+		int dir = rand() % 10 > 5 ? LEFT : RIGHT;		//Ó¢ÎÄÃ°ºÅ
+		fishs[type].dir = dir;
+		fishs[type].y = rand() % 90 * 10 + 50;
+		fishs[type].x = dir == LEFT ? rand() % BOARD + BKWIDTH : -1 * rand() % BOARD;
+		fishs[type].w = FISH_MIN_W + 20 * type;
+		fishs[type].h = (int)(fishs[type].w / fishs[type].rate);
+	}
+}
 
-		}
-		else
-		{
-			fishs[type].type = rand() % (21 - 1) + 1;  // Éú³ÉÒ»¸ö1µ½20Ö®¼äµÄËæ»úÊı£¬ÓÃÓÚ±íÊ¾ÓãµÄÀàĞÍ
-			int dir = rand() % 10 > 5 ? LEFT : RIGHT;  // Éú³ÉÒ»¸öËæ»úÊı£¬Èô´óÓÚ5ÔòdirÎª0£¨±íÊ¾×ó£©£¬·ñÔòÎª1£¨±íÊ¾ÓÒ£©
-			fishs[type].dir = dir;  // ½«Ëæ»úÉú³ÉµÄ·½Ïò¸³Öµ¸ø¶ÔÓ¦ÓãµÄ·½ÏòÊôĞÔ
-			fishs[type].y = rand() % 90 * 10 + 50;  // Éú³ÉÒ»¸ö50µ½950Ö®¼äµÄËæ»úÊı£¬ÓÃÓÚ±íÊ¾ÓãµÄy×ø±ê
-			fishs[type].x = dir == 0 ? rand() % 400 + 1920 : -1 * rand() % 400;  // ÈôdirÎª0£¬ÔòÔÚ1920µ½2320Ö®¼äÉú³Éx×ø±ê£»·ñÔòÔÚ¸º400µ½0Ö®¼äÉú³Éx×ø±ê£¬ÓÃÀ´ÅĞ¶ÏÓã´Ó×ó±ß»¹ÊÇÓÒ±ß³öÀ´
-			fishs[type].w = 100 + 20 * type;  // ¸ù¾İÓãµÄÀàĞÍ¼ÆËãÓãµÄ¿í¶È£¬¿í¶ÈËæÀàĞÍÔö¼Ó¶øÔö¼Ó
-			fishs[type].h = (int)(fishs[type].w / fishs[type].rate);  // ¸ù¾İÓãµÄ¿í¸ß±È¼ÆËãÓãµÄ¸ß¶È
-		}
+void initfishrole()
+{
+	fishs[0].w = FISH_MIN_W + 30 + 20 * LEVEL;
+	fishs[0].h = ((int)(fishs[0].w / fishs[0].rate));
+	loadimage(&fishIMG[ROLE][0], _T("D:/Programming/vs2022/Project/BigFishEatSmallFish/image/eatenfish0left.png"), fishs[ROLE].w, fishs[ROLE].h, true);
+	loadimage(&fishIMG[ROLE][1], _T("D:/Programming/vs2022/Project/BigFishEatSmallFish/image/eatenfish0right.png"), fishs[ROLE].w, fishs[ROLE].h, true);
+}
+
+void loadresource()
+{
+	char filename[100] = { "" };
+	for (int i = 0; i < FISH_MAX_NUMS; i++)
+	{
+		initfish(i);
 		for (int j = 0; j < 2; j++)
 		{
 			switch (j)
 			{
 			case 0:
-				sprintf(filename, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/eatenfish%dleft.png", i);
+				sprintf(filename,"D:/Programming/vs2022/Project/BigFishEatSmallFish/image/eatenfish%dleft.png", i);
 				break;
 			case 1:
-				sprintf(filename, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/eatenfish%dright.png", i);
+				sprintf(filename,"D:/Programming/vs2022/Project/BigFishEatSmallFish/image/eatenfish%dright.png", i);
 				break;
 			}
-			loadimage(&fishIMG[i][j], filename, fishs[i].w, fishs[i].h, true); //ÔØÈëËõ·ÅÍ¼Æ¬
+			loadimage(&fishIMG[i][j], filename, fishs[i].w, fishs[i].h, true);				//ÔØÈëËõ·ÅÍ¼Æ¬
 
 		}
 	}
-	
-} 
+}
 
 int ontimer(int duration, int id)
 {
@@ -332,10 +356,10 @@ void fishmove()					//ºóĞø»¹ÒªĞŞ¸ÄÕâ¸öº¯Êı¼ÓÉÏ
 		switch (fishs[i].dir)
 		{
 		case LEFT:
-			fishs[i].x -= 1;
+			fishs[i].x -= 2;
 			break;
 		case RIGHT:
-			fishs[i].x += 1;
+			fishs[i].x += 2;
 			break;
 		}
 	}
@@ -359,7 +383,7 @@ void FishPut(int level)
 {
 	for (int i = 1; i < level + 3; i++)						//ºóÆÚ¼ÓÉÏ·ÖÊı»úÖÆºóÌí¼ÓµÈ¼¶
 	{
-		transparentimage3(NULL, fishs[i].x, fishs[i].y, &fishIMG[i][0]);
+		transparentimage3(NULL, fishs[i].x, fishs[i].y, &fishIMG[i][fishs[i].dir]);
 	}
 }
 
@@ -388,6 +412,30 @@ void setrate()
 	fishs[20].rate = 1;
 
 }
+
+void resetothers()
+{
+	for (int i = 1; i < FISH_MAX_NUMS; i++)
+	{
+		switch (fishs[i].dir)
+		{
+		case LEFT:
+			if (fishs[i].x < -400)
+			{
+				initfish(i);
+			}
+			break;
+		case RIGHT:
+			if (fishs[i].x > 1920 + 400)
+			{
+				initfish(i);
+			}
+			break;
+		}
+	}
+}
+
+
 
 //---------------------------------------------------------------------------------------------------------------------------------------------//
 
@@ -535,10 +583,3 @@ bool AccountInput(char* Account, char* Password, bool check)
 	}
 
 }
-
-
-
-
-
-
-
