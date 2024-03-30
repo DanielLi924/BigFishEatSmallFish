@@ -98,7 +98,7 @@ void FishPut(int level);
 void control();
 void setrate();
 int ontimer(int duration, int id);
-void AccountInput(char *Account, char *Password);
+bool AccountInput(char *Account, char *Password, bool situation);
 void beginword();
 void printUser(char* Username);
 
@@ -202,12 +202,8 @@ int starting()
 				{
 					char Account[20];
 					char Password[20];
-					AccountInput(Account, Password);
-					if (Account[0] != '\0')
-					{
-
-					}
-					if (UserData(Account, Password, true))
+					bool s = AccountInput(Account, Password, true);
+					if (s)
 					{
 						situation = 1;
 						return situation;
@@ -223,15 +219,11 @@ int starting()
 				{
 					char Account[20];
 					char Password[20];
-					InputBox(Account, 20, "Your Accunt:(小于10个字符，请不要输入空格，且如果不需要输入账户，则不要在输入框中输入任何内容直接点击确定)", "Account", "\0", 0, 0, true);//获取用户账户
-					if (Account[0] != '\0')
+					bool s1 = AccountInput(Account, Password, false);
+					if(s1)
 					{
-						InputBox(Password, 20, "Your Password:(In less than 10 character)", "Password", "\0", 0, 0, false);//获取用户密码
-						if (UserData(Account, Password, false))
-						{
-							situation = 2;
-							return situation;
-						}
+						situation = 2;
+						return situation;
 					}
 				}
 				else if (ExitClicked)
@@ -444,7 +436,7 @@ bool UserData(char* username, char* password, bool check)
 	}
 }
 
-void AccountInput(char* Account, char* Password)
+bool AccountInput(char* Account, char* Password, bool check)
 {
 	IMAGE background1;
 	loadimage(&background1, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/background.jpg", 1920, 1080, true);
@@ -531,6 +523,17 @@ void AccountInput(char* Account, char* Password)
 			outtextxy(100, 670, password);
 		}
 	}
+	if (check)
+	{
+		bool situation = UserData(username, password, true);
+		return situation;
+	}
+	else
+	{
+		bool situation = UserData(username, password, false);
+		return situation;
+	}
+
 }
 
 
