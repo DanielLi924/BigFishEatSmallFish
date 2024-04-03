@@ -10,7 +10,6 @@
 #include <stdbool.h>
 #include <chrono> // 添加头文件以使用时间库
 #pragma comment(lib, "MSIMG32.LIB")
-#define LEVEL 1
 #define PLAYER 0
 #define LEFT 0
 #define RIGHT 1
@@ -21,7 +20,7 @@
 #define BKHIGH 1080
 #define ROLE 0
 #define FISH_MIN_W 50
-int level;
+char Account[20];
 
 
 struct Fish //单个鱼的属性
@@ -34,7 +33,7 @@ struct Fish //单个鱼的属性
 	int w;
 	int h;
 	IMAGE picture;
-	int level;
+	int gamelevel;
 	int score;
 };
 struct Fish fishs[21];
@@ -78,7 +77,6 @@ struct msg
 	};
 };
 
-
 typedef struct User //结构体用来存储用户数据
 {
 	char* username;
@@ -100,8 +98,7 @@ bool isPointInsideRectangle(int x, int y, int left, int top, int right, int bott
 void DrawButten(int left, int top, int right, int bottom, const char* text); //创建游戏标准按钮
 bool UserData(char* username, char* password, bool check);
 void fishmove();
-void Fishload();
-void FishPut(int level);
+void FishPut(int gamelevel);
 void control();
 void setrate();
 int ontimer(int duration, int id);
@@ -109,8 +106,8 @@ bool AccountInput(char *Account, char *Password, bool situation);
 void resetothers();
 void initfish(int type);
 void loadresource();
+int eatfish(int i);
 int gameover();
-int eatfish(int type);
 
 struct User* users = NULL;
 int num_users = 0;
@@ -126,6 +123,7 @@ void DrawButten(int left, int top, int right, int bottom, const char* text) //绘
 {
 	setfillcolor(LIGHTGRAY);
 	solidroundrect(left, top, right, bottom, 10, 10); //样式和大小
+	setbkmode(TRANSPARENT);
 	outtextxy(left + 10, top + 10, text);//输出文字
 }
 
@@ -216,7 +214,6 @@ int starting()
 			{
 				if (LoginClicked)//登录界面
 				{
-					char Account[20];
 					char Password[20];
 					bool s = AccountInput(Account, Password, true);
 					if (s)
@@ -233,7 +230,6 @@ int starting()
 				}
 				else if (SignUpClicked)//注册界面
 				{
-					char Account[20];
 					char Password[20];
 					bool s1 = AccountInput(Account, Password, false);
 					if(s1)
@@ -255,31 +251,47 @@ int starting()
 
 int game()
 {
+	fishs[0].gamelevel = 1;
+	int score = 0;
 	setrate();
 	IMAGE background;
 	loadimage(&background, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/game.jpg", 1920, 1080, true);
 	// Display the image
 	loadresource();
-
+	LOGFONT Log{}; 
+	Log.lfQuality = PROOF_QUALITY;
+	Log.lfHeight = 30;
+	strcpy(Log.lfFaceName, "得意黑 斜体");
+	settextstyle(&Log);
 	while (1)
 	{
+		
+		char add[] = "分";
+		char scoretext[100];
+		_itoa(fishs[0].score, scoretext, 10);
+		strcat(scoretext, add);
 		BeginBatchDraw(); // 开始双缓冲绘图
 		putimage(0, 0, &background, SRCCOPY);// 在虚拟画布上绘制背景
-
-		FishPut(LEVEL);
-		transparentimage3(NULL, fishs[0].x, fishs[0].y, &fishIMG[0][0]);
-
+		
+		FishPut(fishs[0].gamelevel);
+		transparentimage3(NULL, fishs[0].x, fishs[0].y, &fishIMG[0][fishs[0].dir]);
+		outtextxy(1500, 50, scoretext);
 		FlushBatchDraw(); // 刷新缓冲区，将图像一次性绘制到屏幕上
+
 		control();
 		if (ontimer(10, 0))
 		{
 			fishmove();
 		}
 		resetothers();
-		
+		if (gameover() == 1)
+		{
+			break;
+		}
 
 	}
 	closegraph(); // 关闭图形窗口
+	return 0;
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------------
@@ -303,12 +315,13 @@ void initfish(int type)					//后续还要修改这个函数加上
 		fishs[type].x = dir == LEFT ? rand() % BOARD + BKWIDTH : -1 * rand() % BOARD;
 		fishs[type].w = FISH_MIN_W + 20 * type;
 		fishs[type].h = (int)(fishs[type].w / fishs[type].rate);
+		fishs[type].gamelevel = type;
 	}
 }
 
 void initfishrole()
 {
-	fishs[0].w = FISH_MIN_W + 30 + 20 * LEVEL;
+	fishs[0].w = FISH_MIN_W + 30 + 20 * fishs[0].gamelevel;
 	fishs[0].h = ((int)(fishs[0].w / fishs[0].rate));
 	loadimage(&fishIMG[ROLE][0], _T("D:/Programming/vs2022/Project/BigFishEatSmallFish/image/eatenfish0left.png"), fishs[ROLE].w, fishs[ROLE].h, true);
 	loadimage(&fishIMG[ROLE][1], _T("D:/Programming/vs2022/Project/BigFishEatSmallFish/image/eatenfish0right.png"), fishs[ROLE].w, fishs[ROLE].h, true);
@@ -374,14 +387,26 @@ void control()
 	}
 
 	// 有鼠标消息，则处理消息
-	fishs[0].x = msg.x;
-	fishs[0].y = msg.y;
+	if (fishs[0].x <= msg.x)
+	{
+		fishs[0].dir = 1;
+		fishs[0].x = msg.x;
+		fishs[0].y = msg.y;
+	}
+	else
+	{
+		fishs[0].dir = 0;
+		fishs[0].x = msg.x;
+		fishs[0].y = msg.y;
+	}
+
+	
 }
 
 
 void FishPut(int level)
 {
-	for (int i = 1; i < level + 3; i++)						//后期加上分数机制后添加等级
+	for (int i = 1; i < fishs[0].gamelevel + 3; i++)						//后期加上分数机制后添加等级
 	{
 		transparentimage3(NULL, fishs[i].x, fishs[i].y, &fishIMG[i][fishs[i].dir]);
 	}
@@ -390,28 +415,29 @@ void FishPut(int level)
 void setrate()
 {
 	fishs[0].rate = 2.45;
-	fishs[1].rate = 2.60;
-	fishs[2].rate = 1.03;
-	fishs[3].rate = 1.12;
-	fishs[4].rate = 0.58;
-	fishs[5].rate = 3.36;
-	fishs[6].rate = 1.65;
-	fishs[7].rate = 2.08;
-	fishs[8].rate = 1.08;
-	fishs[9].rate = 1.68;
-	fishs[10].rate = 3.45;
-	fishs[11].rate = 3.84;
-	fishs[12].rate = 2.51;
-	fishs[13].rate = 2.92;
-	fishs[14].rate = 1.13;
-	fishs[15].rate = 2.34;
-	fishs[16].rate = 1.58;
-	fishs[17].rate = 2.26;
-	fishs[18].rate = 2.26;
-	fishs[19].rate = 1;
-	fishs[20].rate = 1;
+	fishs[1].rate = 2.12;
+	fishs[2].rate = 2.26;
+	fishs[3].rate = 2.62;
+	fishs[4].rate = 2.84;
+	fishs[5].rate = 1.59;
+	fishs[6].rate = 2.50;
+	fishs[7].rate = 2.60;
+	fishs[8].rate = 1.00;
+	fishs[9].rate = 1.12;
+	fishs[10].rate = 0.58;
+	fishs[11].rate = 3.36;
+	fishs[12].rate = 1.65;
+	fishs[13].rate = 2.08;
+	fishs[14].rate = 1.08;
+	fishs[15].rate = 1.68;
+	fishs[16].rate = 3.45;
+	fishs[17].rate = 3.84;
+	fishs[18].rate = 3.29;
+	fishs[19].rate = 2.92;
+	fishs[20].rate = 1.14;
+	fishs[21].rate = 1.56;
 
-}
+} //缩放比例//比例
 
 void resetothers()
 {
@@ -433,6 +459,56 @@ void resetothers()
 			break;
 		}
 	}
+}//边界检测
+
+int eatfish(int type)
+{
+	//两个矩形相交
+	//左上角求最大值
+
+	int minx = max(fishs[ROLE].x, fishs[type].x);
+	int miny = max(fishs[ROLE].y, fishs[type].y);
+	//右下角求最小值
+	int maxx = min(fishs[ROLE].x + fishs[ROLE].w, fishs[type].x + fishs[type].w);
+	int maxy = min(fishs[ROLE].y + fishs[ROLE].h, fishs[type].y + fishs[type].h);
+
+	if (minx > maxx || miny > maxy)
+	{
+		return 0;			//不相交
+	}
+	else
+	{
+		//使用等级判断
+		if (fishs[ROLE].gamelevel >= fishs[type].gamelevel)
+		{
+			initfish(type);
+			fishs[0].score = fishs[0].score + type;
+			int result = fishs[0].score / 5;
+			if (result >= 1 )
+			{
+				fishs[0].gamelevel = result;
+				initfishrole();
+			}
+			return 0;							//下一步完善积分制度时添加积分
+		}
+		else
+		{
+			return 1;
+		}
+	}
+
+}
+
+int gameover()
+{
+	for (int i = 1; i < fishs[0].gamelevel + 3; i++)//问题源（i < FISH_MAX_NUMS)
+	{
+		if (eatfish(i) == 1)
+		{
+			return 1;
+		}
+	}
+	return 0;
 }
 
 
@@ -486,12 +562,12 @@ bool UserData(char* username, char* password, bool check)
 
 bool AccountInput(char* Account, char* Password, bool check)
 {
-	IMAGE background1;
+	 IMAGE background1;
 	loadimage(&background1, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/background.jpg", 1920, 1080, true);
 	char log[] = "Username";
 	LOGFONT Log{};
 	settextcolor(GREEN);
-	Log.lfQuality = ANTIALIASED_QUALITY;
+	Log.lfQuality = PROOF_QUALITY;
 	Log.lfHeight = 80;
 	strcpy(Log.lfFaceName, "得意黑 斜体");
 	settextstyle(&Log);
@@ -533,6 +609,7 @@ bool AccountInput(char* Account, char* Password, bool check)
 			outtextxy(100, 270, log);
 			outtextxy(100, 570, pas);
 			outtextxy(100, 420, username);
+			Account = username;
 		}
 	}
 
@@ -569,6 +646,7 @@ bool AccountInput(char* Account, char* Password, bool check)
 			outtextxy(100, 570, pas);
 			outtextxy(100, 420, username);
 			outtextxy(100, 670, password);
+			Password = password;
 		}
 	}
 	if (check)
