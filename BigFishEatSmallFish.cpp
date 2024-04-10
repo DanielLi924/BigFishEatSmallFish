@@ -36,8 +36,8 @@ struct Fish //单个鱼的属性
 	int gamelevel;
 	int score;
 };
-struct Fish fishs[21];
-IMAGE fishIMG[21][2];
+struct Fish fishs[22];
+IMAGE fishIMG[22][2];
 struct msg
 {
 	USHORT message;					// 消息标识
@@ -84,6 +84,16 @@ typedef struct User //结构体用来存储用户数据
 	int score;
 };
 
+typedef struct Node {
+	char username[20]; // 假设用户名最大长度为19，加上一个结束符'\0'
+	int score;
+	struct Node* next;
+} Node;
+
+// 全局变量，作为链表的头节点
+Node* head = NULL;
+ // 链表的头指针
+
 // 功能模块
 void transparentimage3(IMAGE* dstimg, int x, int y, IMAGE* srcimg) //实现透明图片输出
 {
@@ -108,14 +118,15 @@ void initfish(int type);
 void loadresource();
 int eatfish(int i);
 int gameover();
+void addScore(char* username, int score);
 
 struct User* users = NULL;
 int num_users = 0;
 
 //游戏模块
 int starting();
-int game();
-int History();
+void game();
+void History();
 
 //----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -145,6 +156,8 @@ int main()//主函数
 		if (situation == 1)
 		{
 			game();
+
+
 		}
 		else if (situation == 2)
 		{
@@ -168,6 +181,7 @@ int starting()
 	int LoginLeft = 860, LoginTop = 290, LoginRight = 1060, LoginDown = 390; //Login按钮参数
 	int SignUpLeft = 860, SignUpTop = 490, SignUpRight = 1060, SignUpDown = 590;//SignUp按钮参数
 	int ExitLeft = 860, ExitTop = 690, ExitRight = 1060, ExitDown = 790;//退出按钮参数
+	int HistoryLeft = 860, HistoryTop = 590, HistoryRight = 1060, HistoryDown = 690;
 	LOGFONT Log{};
 	settextcolor(GREEN);
 	Log.lfQuality = ANTIALIASED_QUALITY;
@@ -177,9 +191,11 @@ int starting()
 	DrawButten(LoginLeft, LoginTop, LoginRight, LoginDown, "login"); //绘制登录按钮
 	DrawButten(SignUpLeft, SignUpTop, SignUpRight, SignUpDown, "SignUp"); //绘制注册按钮
 	DrawButten(ExitLeft, ExitTop, ExitRight, ExitDown, "Exit"); //绘制退出图标
+	DrawButten(HistoryLeft, HistoryTop, HistoryRight, HistoryDown, "History");
 	bool LoginClicked = false; //设置登录按钮为false
 	bool SignUpClicked = false; //设置注册按钮为false
 	bool ExitClicked = false; //设置退出按钮为false
+	bool HistoryClicked = false;
 	while (1)
 	{
 
@@ -209,6 +225,14 @@ int starting()
 					SignUpClicked = false; //设置注册按钮为false
 					ExitClicked = true; //设置退出按钮为true
 				}
+				else if (isPointInsideRectangle(x, y, HistoryLeft, HistoryTop, HistoryRight, HistoryDown))
+				{
+					LoginClicked = false; //设置登录按钮为false
+					SignUpClicked = false; //设置注册按钮为false
+					ExitClicked = false; //设置退出按钮为false
+					HistoryClicked = true;
+				}
+
 			}
 			else if (msg.uMsg == WM_LBUTTONUP) //检测鼠标左键是否抬起
 			{
@@ -242,6 +266,10 @@ int starting()
 				{
 					exit(0);
 				}
+				else if (HistoryClicked)
+				{
+					History();
+				}
 
 			}
 		}
@@ -249,7 +277,7 @@ int starting()
 
 }
 
-int game()
+void game()
 {
 	fishs[0].gamelevel = 1;
 	int score = 0;
@@ -286,36 +314,133 @@ int game()
 		resetothers();
 		if (gameover() == 1)
 		{
+			EndBatchDraw(); // 结束双缓冲绘图
+			addScore(Account, fishs[0].score); // 添加分数到链表 // 显示历史记录
 			break;
 		}
-
 	}
-	closegraph(); // 关闭图形窗口
-	return 0;
+	//closegraph(); // 关闭图形窗口
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------
-void initfish(int type)					//后续还要修改这个函数加上
+void addScore(char* username, int score)
 {
-	if (type == ROLE)
-	{
-		fishs[type].x = BKWIDTH / 2 - 60;
-		fishs[type].y = BKHIGH / 2 - 60;
-		fishs[type].dir = RIGHT;
-		fishs[type].type = ROLE;
-		fishs[type].w = (FISH_MIN_W + 30);
-		fishs[type].h = (int)(fishs[type].w / fishs[type].rate);
+	// 创建新节点
+	Node* newNode = (Node*)malloc(sizeof(Node));
+	if (newNode == NULL) {
+		// 内存分配失败
+		fprintf(stderr, "Memory allocation failed.\n");
+		return;
 	}
-	else
+
+	// 复制用户名到新节点
+	strncpy(newNode->username, username, sizeof(newNode->username) - 1);
+	newNode->username[sizeof(newNode->username) - 1] = '\0'; // 确保字符串结束
+
+	// 设置分数
+	newNode->score = score;
+
+	// 将新节点的next指针指向当前的链表尾节点
+	newNode->next = NULL;
+
+	// 如果链表为空，新节点即为头节点
+	if (head == NULL) {
+		head = newNode;
+	}
+	else {
+		// 否则，遍历链表到末尾，将新节点添加到末尾
+		Node* current = head;
+		while (current->next != NULL) {
+			current = current->next;
+		}
+		current->next = newNode;
+	}
+}
+
+void History()
+{
+	char message[1024] = "";
+	struct Node* current = head;
+	while (current != NULL) {
+		char record[256];
+		snprintf(record, sizeof(record), "Player: %s\nScore: %d\n\n", current->username, current->score);
+		strcat(message, record);
+		current = current->next;
+	}
+	HWND hWnd = FindWindow(NULL, "BigFishEatSmallFish");
+	MessageBox(hWnd, message, "History Records", MB_OK);
+}
+
+
+//-----------------------------------------------------------------------------------------------------------------------------------------
+// 初始化鱼
+void initfish(int type)
+{
+	const int borderWidth = 100; // 定义屏幕边缘的边界宽度
+
+	if (type == ROLE) // 玩家角色初始化
 	{
+		fishs[type].x = BKWIDTH / 2 - 60; // 初始位置在屏幕中央
+		fishs[type].y = BKHIGH / 2 - 60;
+		fishs[type].dir = RIGHT; // 初始方向向右
+		fishs[type].type = ROLE;
+		fishs[type].w = FISH_MIN_W + 30; // 玩家角色的宽度
+		fishs[type].h = (int)(fishs[type].w / fishs[type].rate); // 根据比例设置高度
+	}
+	else // 其他鱼的初始化
+	{
+		// 随机选择生成方向（左或右）
+		int spawnSide = rand() % 2 == 0 ? LEFT : RIGHT;
+		fishs[type].dir = spawnSide;
+
+		// 根据生成方向设置初始位置，在屏幕外
+		if (spawnSide == LEFT)
+		{
+			fishs[type].x = -fishs[type].w; // 左侧屏幕外
+		}
+		else
+		{
+			fishs[type].x = BKWIDTH; // 右侧屏幕外
+		}
+		fishs[type].y = borderWidth + rand() % (BKHIGH - 2 * borderWidth); // 随机生成在顶部边界宽度外的区域
+
+		// 随机生成鱼的类型和大小
 		fishs[type].type = rand() % (FISH_MAX_NUMS - 1) + 1;
-		int dir = rand() % 10 > 5 ? LEFT : RIGHT;		//英文冒号
-		fishs[type].dir = dir;
-		fishs[type].y = rand() % 90 * 10 + 50;
-		fishs[type].x = dir == LEFT ? rand() % BOARD + BKWIDTH : -1 * rand() % BOARD;
 		fishs[type].w = FISH_MIN_W + 20 * type;
 		fishs[type].h = (int)(fishs[type].w / fishs[type].rate);
 		fishs[type].gamelevel = type;
+	}
+}
+
+// 移动鱼
+void fishmove()
+{
+	const int borderWidth = 100; // 定义屏幕边缘的边界宽度
+
+	for (int i = 1; i < FISH_MAX_NUMS; i++)
+	{
+		switch (fishs[i].dir)
+		{
+		case LEFT:
+			fishs[i].x -= 2; // 向左移动
+			// 检查是否移出屏幕左侧
+			if (fishs[i].x + fishs[i].w < 0)
+			{
+				// 如果鱼移出了屏幕左侧，将其重新放置在屏幕右侧
+				fishs[i].x = BKWIDTH;
+				fishs[i].y = borderWidth + rand() % (BKHIGH - 2 * borderWidth);
+			}
+			break;
+		case RIGHT:
+			fishs[i].x += 2; // 向右移动
+			// 检查是否移出屏幕右侧
+			if (fishs[i].x > BKWIDTH)
+			{
+				// 如果鱼移出了屏幕右侧，将其重新放置在屏幕左侧
+				fishs[i].x = -fishs[i].w;
+				fishs[i].y = borderWidth + rand() % (BKHIGH - 2 * borderWidth);
+			}
+			break;
+		}
 	}
 }
 
@@ -362,21 +487,7 @@ int ontimer(int duration, int id)
 	return 0;
 }
 
-void fishmove()					//后续还要修改这个函数加上
-{
-	for (int i = 1; i < FISH_MAX_NUMS; i++)
-	{
-		switch (fishs[i].dir)
-		{
-		case LEFT:
-			fishs[i].x -= 2;
-			break;
-		case RIGHT:
-			fishs[i].x += 2;
-			break;
-		}
-	}
-}
+
 
 void control()
 {
@@ -508,6 +619,7 @@ int gameover()
 			return 1;
 		}
 	}
+
 	return 0;
 }
 
