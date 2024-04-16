@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <windows.h>
+#include <string.h>
 #include <time.h>
 #include <stdbool.h>
 #include <chrono> // 添加头文件以使用时间库
@@ -22,6 +23,9 @@
 #define FISH_MIN_W 50
 char Account[20];
 
+struct User* users = NULL;
+
+int num_users = 0;
 
 struct Fish //单个鱼的属性
 {
@@ -36,8 +40,11 @@ struct Fish //单个鱼的属性
 	int gamelevel;
 	int score;
 };
+
 struct Fish fishs[22];
+
 IMAGE fishIMG[22][2];
+
 struct msg
 {
 	USHORT message;					// 消息标识
@@ -119,14 +126,16 @@ void loadresource();
 int eatfish(int i);
 int gameover();
 void addScore(char* username, int score);
+void pause();
 
-struct User* users = NULL;
-int num_users = 0;
+
+
 
 //游戏模块
 int starting();
 void game();
 void History();
+void supertoolinit();
 
 //----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -283,7 +292,9 @@ void game()
 	int score = 0;
 	setrate();
 	IMAGE background;
+	IMAGE countinue;
 	loadimage(&background, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/game.jpg", 1920, 1080, true);
+	loadimage(&countinue, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/continue.png",30,30,true);
 	// Display the image
 	loadresource();
 	LOGFONT Log{}; 
@@ -291,6 +302,7 @@ void game()
 	Log.lfHeight = 30;
 	strcpy(Log.lfFaceName, "得意黑 斜体");
 	settextstyle(&Log);
+
 	while (1)
 	{
 		
@@ -300,9 +312,9 @@ void game()
 		strcat(scoretext, add);
 		BeginBatchDraw(); // 开始双缓冲绘图
 		putimage(0, 0, &background, SRCCOPY);// 在虚拟画布上绘制背景
-		
+		transparentimage3(NULL, 1700, 50, &countinue);
 		FishPut(fishs[0].gamelevel);
-		transparentimage3(NULL, fishs[0].x, fishs[0].y, &fishIMG[0][fishs[0].dir]);
+		//pause();
 		outtextxy(1500, 50, scoretext);
 		FlushBatchDraw(); // 刷新缓冲区，将图像一次性绘制到屏幕上
 
@@ -322,7 +334,7 @@ void game()
 	//closegraph(); // 关闭图形窗口
 }
 
-void addScore(char* username, int score)
+void addScore(char* Account, int score)
 {
 	// 创建新节点
 	Node* newNode = (Node*)malloc(sizeof(Node));
@@ -333,7 +345,7 @@ void addScore(char* username, int score)
 	}
 
 	// 复制用户名到新节点
-	strncpy(newNode->username, username, sizeof(newNode->username) - 1);
+	strncpy(newNode->username, Account, sizeof(newNode->username) - 1);
 	newNode->username[sizeof(newNode->username) - 1] = '\0'; // 确保字符串结束
 
 	// 设置分数
@@ -370,9 +382,28 @@ void History()
 	MessageBox(hWnd, message, "History Records", MB_OK);
 }
 
+/*
+void pause()
+{
+	isPointInsideRectangle(int x, int y, int left, int top, int right, int bottom);
+	transparentimage3(NULL, fishs[0].x, fishs[0].y, &fishIMG[0][fishs[0].dir]);
+}
+*/
+
+void supertoolinit()
+{
+	IMAGE Shild;
+	IMAGE ClearAllFish;
+	IMAGE DoubleScore;
+	loadimage(&Shild, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/shield.png", 100, 100, true);
+	loadimage(&ClearAllFish, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/ClearAllFish.png", 100, 100, true);
+	loadimage(&DoubleScore, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/eatenfish1left.png", 100, 100, true);
+
+}
+
 
 //-----------------------------------------------------------------------------------------------------------------------------------------
-// 初始化鱼
+
 void initfish(int type)
 {
 	const int borderWidth = 100; // 定义屏幕边缘的边界宽度
@@ -487,8 +518,6 @@ int ontimer(int duration, int id)
 	return 0;
 }
 
-
-
 void control()
 {
 	ExMessage msg;
@@ -514,10 +543,9 @@ void control()
 	
 }
 
-
 void FishPut(int level)
 {
-	for (int i = 1; i < fishs[0].gamelevel + 3; i++)						//后期加上分数机制后添加等级
+	for (int i = 1; i < fishs[0].gamelevel + 3; i++)
 	{
 		transparentimage3(NULL, fishs[i].x, fishs[i].y, &fishIMG[i][fishs[i].dir]);
 	}
@@ -624,7 +652,6 @@ int gameover()
 }
 
 
-
 //---------------------------------------------------------------------------------------------------------------------------------------------//
 
 bool UserData(char* username, char* password, bool check)
@@ -721,7 +748,7 @@ bool AccountInput(char* Account, char* Password, bool check)
 			outtextxy(100, 270, log);
 			outtextxy(100, 570, pas);
 			outtextxy(100, 420, username);
-			Account = username;
+			strcpy(Account,username);
 		}
 	}
 
