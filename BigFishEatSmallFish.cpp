@@ -313,6 +313,7 @@ void game()
 		BeginBatchDraw(); // 开始双缓冲绘图
 		putimage(0, 0, &background, SRCCOPY);// 在虚拟画布上绘制背景
 		transparentimage3(NULL, 1700, 50, &countinue);
+		transparentimage3(NULL, fishs[0].x, fishs[0].y, &fishIMG[0][fishs[0].dir]);
 		FishPut(fishs[0].gamelevel);
 		//pause();
 		outtextxy(1500, 50, scoretext);
