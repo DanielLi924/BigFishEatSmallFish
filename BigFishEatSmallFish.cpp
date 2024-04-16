@@ -15,7 +15,7 @@
 #define LEFT 0
 #define RIGHT 1
 #define FISH_MAX_NUMS 21
-#define TIMER_MAX 10
+#define TIMER_MAX 100
 #define BOARD 400
 #define BKWIDTH 1920
 #define BKHIGH 1080
@@ -125,7 +125,7 @@ void initfish(int type);
 void loadresource();
 int eatfish(int i);
 int gameover();
-void addScore(char* username, int score);
+void addNode(char* username, int score);
 void pause();
 
 
@@ -320,22 +320,22 @@ void game()
 		FlushBatchDraw(); // 刷新缓冲区，将图像一次性绘制到屏幕上
 
 		control();
-		if (ontimer(10, 0))
+		if (ontimer(50, 0))
 		{
 			fishmove();
 		}
-		resetothers();
+		resetothers(); // 重置其他鱼的位置
 		if (gameover() == 1)
 		{
 			EndBatchDraw(); // 结束双缓冲绘图
-			addScore(Account, fishs[0].score); // 添加分数到链表 // 显示历史记录
+			addNode(Account, fishs[0].score); // 添加分数到链表 // 显示历史记录
 			break;
 		}
 	}
 	//closegraph(); // 关闭图形窗口
 }
 
-void addScore(char* Account, int score)
+void addNode(char* Account, int score)
 {
 	// 创建新节点
 	Node* newNode = (Node*)malloc(sizeof(Node));
@@ -605,7 +605,7 @@ int eatfish(int type)
 {
 	//两个矩形相交
 	//左上角求最大值
-
+	int level = 1;
 	int minx = max(fishs[ROLE].x, fishs[type].x);
 	int miny = max(fishs[ROLE].y, fishs[type].y);
 	//右下角求最小值
@@ -623,10 +623,10 @@ int eatfish(int type)
 		{
 			initfish(type);
 			fishs[0].score = fishs[0].score + type;
-			int result = fishs[0].score / 5;
-			if (result >= 1 )
+			level++;
+			if (level >= 1 )
 			{
-				fishs[0].gamelevel = result;
+				fishs[0].gamelevel = level;
 				initfishrole();
 			}
 			return 0;							//下一步完善积分制度时添加积分
@@ -641,9 +641,9 @@ int eatfish(int type)
 
 int gameover()
 {
-	for (int i = 1; i < fishs[0].gamelevel + 3; i++)//问题源（i < FISH_MAX_NUMS)
+	for (int i = 1; i < fishs[0].gamelevel + 3; i++) // 遍历所有鱼
 	{
-		if (eatfish(i) == 1)
+		if (eatfish(i) == 1) // 与角色相交
 		{
 			return 1;
 		}
