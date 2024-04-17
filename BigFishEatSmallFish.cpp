@@ -17,7 +17,7 @@
 #define FISH_MAX_NUMS 21
 #define TIMER_MAX 100
 #define BOARD 400
-#define BKWIDTH 1920
+#define BKWIDTH 1710
 #define BKHIGH 1080
 #define ROLE 0
 #define FISH_MIN_W 50
@@ -26,6 +26,7 @@ char Account[20];
 struct User* users = NULL;
 
 int num_users = 0;
+float fishspeed = 1;
 
 struct Fish //单个鱼的属性
 {
@@ -39,11 +40,13 @@ struct Fish //单个鱼的属性
 	IMAGE picture;
 	int gamelevel;
 	int score;
+	char toolname[20];
+	bool sheild = false;
 };
 
-struct Fish fishs[22];
+struct Fish fishs[25];
 
-IMAGE fishIMG[22][2];
+IMAGE fishIMG[25][2];
 
 struct msg
 {
@@ -97,6 +100,10 @@ typedef struct Node {
 	struct Node* next;
 } Node;
 
+int level = 1;
+
+int turelevel;
+
 // 全局变量，作为链表的头节点
 Node* head = NULL;
  // 链表的头指针
@@ -126,16 +133,13 @@ void loadresource();
 int eatfish(int i);
 int gameover();
 void addNode(char* username, int score);
-void pause();
-
-
-
 
 //游戏模块
 int starting();
 void game();
 void History();
 void supertoolinit();
+void Shield();
 
 //----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -288,7 +292,11 @@ int starting()
 
 void game()
 {
+	level = 1;
 	fishs[0].gamelevel = 1;
+	strcpy(fishs[22].toolname, "doublepoints"); // 积分双倍道具
+	strcpy(fishs[23].toolname, "shield"); // 盾牌道具
+	strcpy(fishs[24].toolname, "slowdown"); // 减速道具
 	int score = 0;
 	setrate();
 	IMAGE background;
@@ -302,21 +310,27 @@ void game()
 	Log.lfHeight = 30;
 	strcpy(Log.lfFaceName, "得意黑 斜体");
 	settextstyle(&Log);
-
+	fishs[0].score = 0;
 	while (1)
 	{
 		
-		char add[] = "分";
+
+		char add[] = "points";
 		char scoretext[100];
+		char leveltext[100];
+		char leveladd[] = "level";
 		_itoa(fishs[0].score, scoretext, 10);
+		_itoa(fishs[0].gamelevel, leveltext, 10);
+		strcat(leveltext, leveladd);
 		strcat(scoretext, add);
 		BeginBatchDraw(); // 开始双缓冲绘图
 		putimage(0, 0, &background, SRCCOPY);// 在虚拟画布上绘制背景
-		transparentimage3(NULL, 1700, 50, &countinue);
+		transparentimage3(NULL, 1500, 50, &countinue);
 		transparentimage3(NULL, fishs[0].x, fishs[0].y, &fishIMG[0][fishs[0].dir]);
 		FishPut(fishs[0].gamelevel);
 		//pause();
 		outtextxy(1500, 50, scoretext);
+		outtextxy(1400, 50,leveltext);
 		FlushBatchDraw(); // 刷新缓冲区，将图像一次性绘制到屏幕上
 
 		control();
@@ -331,6 +345,11 @@ void game()
 			addNode(Account, fishs[0].score); // 添加分数到链表 // 显示历史记录
 			break;
 		}
+		if (ontimer(50, 0))
+		{
+			fishspeed = fishspeed + 1;
+		}
+		
 	}
 	//closegraph(); // 关闭图形窗口
 }
@@ -391,6 +410,7 @@ void pause()
 }
 */
 
+/*
 void supertoolinit()
 {
 	IMAGE Shild;
@@ -401,6 +421,7 @@ void supertoolinit()
 	loadimage(&DoubleScore, "D:/Programming/vs2022/Project/BigFishEatSmallFish/image/eatenfish1left.png", 100, 100, true);
 
 }
+*/
 
 
 //-----------------------------------------------------------------------------------------------------------------------------------------
@@ -443,7 +464,7 @@ void initfish(int type)
 	}
 }
 
-// 移动鱼
+// 边缘检测
 void fishmove()
 {
 	const int borderWidth = 100; // 定义屏幕边缘的边界宽度
@@ -453,7 +474,7 @@ void fishmove()
 		switch (fishs[i].dir)
 		{
 		case LEFT:
-			fishs[i].x -= 2; // 向左移动
+			fishs[i].x -= fishspeed; // 向左移动
 			// 检查是否移出屏幕左侧
 			if (fishs[i].x + fishs[i].w < 0)
 			{
@@ -463,7 +484,7 @@ void fishmove()
 			}
 			break;
 		case RIGHT:
-			fishs[i].x += 2; // 向右移动
+			fishs[i].x += fishspeed; // 向右移动
 			// 检查是否移出屏幕右侧
 			if (fishs[i].x > BKWIDTH)
 			{
@@ -487,7 +508,7 @@ void initfishrole()
 void loadresource()
 {
 	char filename[100] = { "" };
-	for (int i = 0; i < FISH_MAX_NUMS; i++)
+	for (int i = 0; i < 25; i++)
 	{
 		initfish(i);
 		for (int j = 0; j < 2; j++)
@@ -550,6 +571,7 @@ void FishPut(int level)
 	{
 		transparentimage3(NULL, fishs[i].x, fishs[i].y, &fishIMG[i][fishs[i].dir]);
 	}
+	//for()
 }
 
 void setrate()
@@ -576,6 +598,9 @@ void setrate()
 	fishs[19].rate = 2.92;
 	fishs[20].rate = 1.14;
 	fishs[21].rate = 1.56;
+	fishs[22].rate = 2.35;
+	fishs[23].rate = 2.78;
+	fishs[24].rate = 2.95;	
 
 } //缩放比例//比例
 
@@ -601,41 +626,64 @@ void resetothers()
 	}
 }//边界检测
 
-int eatfish(int type)
+int eatfish(int type) //碰撞检测
 {
 	//两个矩形相交
 	//左上角求最大值
-	int level = 1;
+	int truelevel = level / 5 +1;
 	int minx = max(fishs[ROLE].x, fishs[type].x);
 	int miny = max(fishs[ROLE].y, fishs[type].y);
 	//右下角求最小值
 	int maxx = min(fishs[ROLE].x + fishs[ROLE].w, fishs[type].x + fishs[type].w);
 	int maxy = min(fishs[ROLE].y + fishs[ROLE].h, fishs[type].y + fishs[type].h);
 
-	if (minx > maxx || miny > maxy)
+	if (fishs[0].sheild)
 	{
-		return 0;			//不相交
+		return 1;
 	}
 	else
 	{
-		//使用等级判断
-		if (fishs[ROLE].gamelevel >= fishs[type].gamelevel)
+		if (minx > maxx || miny > maxy)
 		{
-			initfish(type);
-			fishs[0].score = fishs[0].score + type;
-			level++;
-			if (level >= 1 )
+			return 0;  //不相交
+		}
+		else if (type > 0 && type < 22)
+		{
+			//使用等级判断
+			if (fishs[ROLE].gamelevel >= fishs[type].gamelevel)
 			{
-				fishs[0].gamelevel = level;
-				initfishrole();
+				initfish(type);
+				fishs[0].score = fishs[0].score + type;
+				level++;
+				if (level >= 1)
+				{
+					fishs[0].gamelevel = truelevel;
+					initfishrole();
+				}
+				return 0;
 			}
-			return 0;							//下一步完善积分制度时添加积分
+			else
+			{
+				return 1;
+			}
 		}
 		else
 		{
-			return 1;
+			if (fishs[type].toolname == "doublepoint")
+			{
+				fishs[0].score = fishs[0].score * 2;
+			}
+			else if (fishs[type].toolname == "shield")
+			{
+				Shield();
+			}
+			else if (fishs[type].toolname == "slowdown")
+			{
+
+			}
 		}
 	}
+	
 
 }
 
@@ -650,6 +698,14 @@ int gameover()
 	}
 
 	return 0;
+}
+
+void Shield()
+{
+	fishs[0].sheild = true;
+	MOUSEMSG msg = GetMouseMsg();
+	fishs[23].x = msg.x;
+	fishs[23].y = msg.y;
 }
 
 
